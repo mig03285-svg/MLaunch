@@ -8,7 +8,7 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#f4f6ff;font-family:Arial,sans-serif}
-header{padding:22px 28px;border-bottom:1px solid #283653;display:flex;justify-content:space-between;align-items:center}
+header{padding:22px 28px;border-bottom:1px solid #283653;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .logo{font-size:28px;font-weight:800;color:#8ba7ff}
 .badge{color:#8be0b0;font-size:13px}
 main{max-width:1000px;margin:auto;padding:28px}
@@ -17,67 +17,172 @@ main{max-width:1000px;margin:auto;padding:28px}
 h1{font-size:clamp(34px,7vw,54px);margin:15px 0}
 p{color:#c6cee4;line-height:1.6}
 .panel{margin-top:22px;padding:24px;background:#121a2d;border:1px solid #273653;border-radius:18px}
-select,button{padding:13px;border-radius:10px;border:1px solid #34466f;background:#1a2742;color:white;font-size:15px}
+select,button{padding:13px;border-radius:10px;border:1px solid #34466f;background:#1a2742;color:white;font-size:15px;max-width:100%}
 button{background:#6d8cff;border:0;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-#status{margin-top:15px;color:#a9bdff}
+#status,#updateStatus{margin-top:15px;color:#a9bdff;overflow-wrap:anywhere}
+a{color:#a9bdff}
 footer{text-align:center;padding:25px;color:#8290af;font-size:13px}
 </style>
 </head>
 <body>
 <header>
   <div class="logo">MLaunch</div>
-  <div class="badge">● Интерфейс запущен</div>
+  <div class="badge">● Java Edition · ранняя версия</div>
 </header>
 <main>
   <section class="hero">
     <div class="eyebrow">ТВОЙ МИР MINECRAFT</div>
     <h1>Играй по-своему.</h1>
-    <p>Твой будущий лаунчер Minecraft. Выбирай версию, готовь сборки и создавай собственный игровой опыт.</p>
+    <p>Выбирай версию Minecraft Java Edition. Список загружается из официального манифеста версий.</p>
     <div class="row">
-      <button id="play">▶ Запустить игру</button>
-      <select id="version" aria-label="Версия Minecraft">
-        <option value="latest">Последняя версия</option>
-        <option value="1.21.8">Minecraft 1.21.8</option>
-        <option value="1.20.1">Minecraft 1.20.1</option>
-        <option value="1.16.5">Minecraft 1.16.5</option>
+      <button id="play">▶ Подготовить запуск</button>
+      <select id="version" aria-label="Версия Minecraft" disabled>
+        <option>Загрузка версий...</option>
       </select>
     </div>
-    <div id="status">Выбери версию Minecraft.</div>
+    <div class="row" style="margin-top:14px">
+      <label for="kind">Тип версии:</label>
+      <select id="kind">
+        <option value="release">Стабильные релизы</option>
+        <option value="all">Все версии, включая снапшоты</option>
+        <option value="snapshot">Только снапшоты</option>
+        <option value="old">Старые beta и alpha</option>
+      </select>
+    </div>
+    <div id="status" role="status">Подключение к манифесту Minecraft...</div>
   </section>
+
   <section class="panel">
     <h2>Игровые возможности</h2>
-    <p>Версии Minecraft · Моды и сборки · Fabric и Forge · Microsoft-авторизация</p>
-    <p>Эти функции будем подключать поэтапно.</p>
+    <p>Версии Java · Microsoft-авторизация · Установка игры · Моды и сборки</p>
+    <p>Пока загружается список версий. Установка и настоящий запуск игры ещё не подключены.</p>
   </section>
+
   <section class="panel">
     <h2>Обновления MLaunch</h2>
     <p>Сайт обновлений:</p>
-    <a href="https://mlaunch-updates.mig03285.workers.dev/" target="_blank" rel="noopener noreferrer" style="color:#a9bdff">Открыть сайт MLaunch</a>
-    <div id="updateStatus">Проверка информации об обновлениях не подключена.</div>
+    <a href="https://mlaunch-updates.mig03285.workers.dev/" target="_blank" rel="noopener noreferrer">Открыть сайт MLaunch</a>
+    <div id="updateStatus">Проверка обновлений...</div>
   </section>
 </main>
 <footer>MLaunch © 2026 · Неофициальный лаунчер Minecraft</footer>
+
 <script>
-document.getElementById('play').addEventListener('click',()=>{
-  document.getElementById('status').textContent=
-  'Интерфейс готов. Запуск Minecraft пока не подключён.';
+const manifestUrl =
+  'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json';
+
+const versionSelect = document.getElementById('version');
+const kindSelect = document.getElementById('kind');
+const status = document.getElementById('status');
+const playButton = document.getElementById('play');
+
+let manifest = null;
+
+function updateVersionList() {
+  if (!manifest) return;
+
+  const kind = kindSelect.value;
+  let versions = manifest.versions;
+
+  if (kind === 'release') {
+    versions = versions.filter(v => v.type === 'release');
+  } else if (kind === 'snapshot') {
+    versions = versions.filter(v => v.type === 'snapshot');
+  } else if (kind === 'old') {
+    versions = versions.filter(v =>
+      v.type === 'old_beta' || v.type === 'old_alpha'
+    );
+  }
+
+  versionSelect.replaceChildren();
+
+  if (kind === 'release') {
+    const latest = document.createElement('option');
+    latest.value = manifest.latest.release;
+    latest.textContent = 'Последний релиз — ' + manifest.latest.release;
+    versionSelect.appendChild(latest);
+  }
+
+  for (const v of versions) {
+    const option = document.createElement('option');
+    option.value = v.id;
+    option.textContent = v.id + (
+      v.type === 'release' ? ' · релиз' :
+      v.type === 'snapshot' ? ' · снапшот' :
+      v.type === 'old_beta' ? ' · beta' :
+      v.type === 'old_alpha' ? ' · alpha' : ''
+    );
+    versionSelect.appendChild(option);
+  }
+
+  if (versionSelect.options.length === 0) {
+    const option = document.createElement('option');
+    option.textContent = 'Нет версий этого типа';
+    versionSelect.appendChild(option);
+  }
+
+  versionSelect.disabled = false;
+  status.textContent =
+    'Загружено версий: ' + versions.length +
+    '. Выбери версию для подготовки.';
+}
+
+async function loadVersions() {
+  status.textContent = 'Загружаем официальный список версий...';
+
+  try {
+    const response = await fetch(manifestUrl);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+
+    manifest = await response.json();
+    updateVersionList();
+  } catch (error) {
+    versionSelect.replaceChildren();
+    const option = document.createElement('option');
+    option.textContent = 'Не удалось загрузить список';
+    versionSelect.appendChild(option);
+    versionSelect.disabled = true;
+    status.textContent =
+      'Ошибка загрузки списка версий. Проверь интернет и попробуй обновить приложение.';
+  }
+}
+
+kindSelect.addEventListener('change', updateVersionList);
+
+versionSelect.addEventListener('change', () => {
+  status.textContent = 'Выбрана версия ' + versionSelect.value +
+    '. Игровые файлы ещё не установлены.';
 });
-document.getElementById('version').addEventListener('change',e=>{
-  document.getElementById('status').textContent=
-  'Выбрана версия: '+e.target.options[e.target.selectedIndex].text+
-  '. Установка игры будет добавлена следующим этапом.';
+
+playButton.addEventListener('click', () => {
+  if (!manifest || versionSelect.disabled) {
+    status.textContent = 'Сначала дождись загрузки списка версий.';
+    return;
+  }
+
+  status.textContent = 'Выбрана Minecraft Java ' +
+    versionSelect.value +
+    '. Настоящая установка и запуск будут подключены следующим этапом.';
 });
+
+loadVersions();
+
 fetch('https://mlaunch-updates.mig03285.workers.dev/api/latest')
-.then(r=>r.json())
-.then(d=>{
-  document.getElementById('updateStatus').textContent=
-  'Версия сайта: '+d.version+' — '+d.message;
-})
-.catch(()=>{
-  document.getElementById('updateStatus').textContent=
-  'Не удалось проверить обновления.';
-});
+  .then(response => {
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    return response.json();
+  })
+  .then(data => {
+    document.getElementById('updateStatus').textContent =
+      'Версия сайта: ' + (data.version || 'не указана') +
+      ' — ' + (data.message || data.status || 'данные получены');
+  })
+  .catch(() => {
+    document.getElementById('updateStatus').textContent =
+      'Не удалось проверить обновления сайта.';
+  });
 </script>
 </body>
 </html>
