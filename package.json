@@ -1,0 +1,14 @@
+
+{
+  "name": "mlaunch",
+  "version": "0.1.0",
+  "description": "Русскоязычный Minecraft Launcher",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "latest"
+  }
+}
