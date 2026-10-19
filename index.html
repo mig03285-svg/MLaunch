@@ -1,0 +1,83 @@
+
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MLaunch</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f4f6ff;font-family:Arial,sans-serif}
+header{padding:22px 28px;border-bottom:1px solid #283653;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:28px;font-weight:800;color:#8ba7ff}
+.badge{color:#8be0b0;font-size:13px}
+main{max-width:1000px;margin:auto;padding:28px}
+.hero{padding:35px;background:linear-gradient(135deg,#1b2d55,#12182b);border:1px solid #34466f;border-radius:22px}
+.eyebrow{color:#8ba7ff;font-weight:bold;letter-spacing:2px}
+h1{font-size:clamp(34px,7vw,54px);margin:15px 0}
+p{color:#c6cee4;line-height:1.6}
+.panel{margin-top:22px;padding:24px;background:#121a2d;border:1px solid #273653;border-radius:18px}
+select,button{padding:13px;border-radius:10px;border:1px solid #34466f;background:#1a2742;color:white;font-size:15px}
+button{background:#6d8cff;border:0;font-weight:bold;cursor:pointer}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+#status{margin-top:15px;color:#a9bdff}
+footer{text-align:center;padding:25px;color:#8290af;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">MLaunch</div>
+  <div class="badge">● Интерфейс запущен</div>
+</header>
+<main>
+  <section class="hero">
+    <div class="eyebrow">ТВОЙ МИР MINECRAFT</div>
+    <h1>Играй по-своему.</h1>
+    <p>Твой будущий лаунчер Minecraft. Выбирай версию, готовь сборки и создавай собственный игровой опыт.</p>
+    <div class="row">
+      <button id="play">▶ Запустить игру</button>
+      <select id="version" aria-label="Версия Minecraft">
+        <option value="latest">Последняя версия</option>
+        <option value="1.21.8">Minecraft 1.21.8</option>
+        <option value="1.20.1">Minecraft 1.20.1</option>
+        <option value="1.16.5">Minecraft 1.16.5</option>
+      </select>
+    </div>
+    <div id="status">Выбери версию Minecraft.</div>
+  </section>
+  <section class="panel">
+    <h2>Игровые возможности</h2>
+    <p>Версии Minecraft · Моды и сборки · Fabric и Forge · Microsoft-авторизация</p>
+    <p>Эти функции будем подключать поэтапно.</p>
+  </section>
+  <section class="panel">
+    <h2>Обновления MLaunch</h2>
+    <p>Сайт обновлений:</p>
+    <a href="https://mlaunch-updates.mig03285.workers.dev/" target="_blank" rel="noopener noreferrer" style="color:#a9bdff">Открыть сайт MLaunch</a>
+    <div id="updateStatus">Проверка информации об обновлениях не подключена.</div>
+  </section>
+</main>
+<footer>MLaunch © 2026 · Неофициальный лаунчер Minecraft</footer>
+<script>
+document.getElementById('play').addEventListener('click',()=>{
+  document.getElementById('status').textContent=
+  'Интерфейс готов. Запуск Minecraft пока не подключён.';
+});
+document.getElementById('version').addEventListener('change',e=>{
+  document.getElementById('status').textContent=
+  'Выбрана версия: '+e.target.options[e.target.selectedIndex].text+
+  '. Установка игры будет добавлена следующим этапом.';
+});
+fetch('https://mlaunch-updates.mig03285.workers.dev/api/latest')
+.then(r=>r.json())
+.then(d=>{
+  document.getElementById('updateStatus').textContent=
+  'Версия сайта: '+d.version+' — '+d.message;
+})
+.catch(()=>{
+  document.getElementById('updateStatus').textContent=
+  'Не удалось проверить обновления.';
+});
+</script>
+</body>
+</html>
