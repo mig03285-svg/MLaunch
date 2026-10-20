@@ -10,8 +10,9 @@ let account = null;
 let isLaunching = false;
 let authInProgress = false;
 
+const UPDATE_SITE = 'https://mlaunch-updates.mig03285.workers.dev';
+
 function getGameRoot() {
-  // EML Lib ожидает имя корневого каталога.
   return 'mlaunch';
 }
 
@@ -64,7 +65,6 @@ ipcMain.handle('mlaunch:app-info', () => ({
 }));
 
 ipcMain.handle('mlaunch:game-status', () => ({
-  // Фактическое наличие установленных файлов пока не проверяется.
   installed: false,
   launching: isLaunching,
   authenticated: Boolean(account),
@@ -74,6 +74,55 @@ ipcMain.handle('mlaunch:game-status', () => ({
       ? `Вход выполнен: ${account.name || account.username || 'игрок'}`
       : 'Войди через аккаунт Microsoft'
 }));
+
+ipcMain.handle('mlaunch:game-functions', async () => {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    let response;
+
+    try {
+      response = await fetch(`${UPDATE_SITE}/api/cheats`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Сайт вернул HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const settings = {
+      enabled: data.enabled === true,
+      xray: data.xray === true,
+      fullbright: data.fullbright === true,
+      fly: data.fly === true,
+      speed: data.speed === true,
+      esp: data.esp === true
+    };
+
+    return {
+      ok: true,
+      settings,
+      message: 'Настройки загружены с сайта MLaunch.'
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      settings: null,
+      message: getErrorMessage(
+        error,
+        'Не удалось загрузить настройки игровых функций.'
+      )
+    };
+  }
+});
 
 ipcMain.handle('mlaunch:login', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) {
@@ -164,9 +213,7 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
     const launcher = new Launcher({
       root: getGameRoot(),
       account,
-      minecraft: {
-        version
-      }
+      minecraft: { version }
     });
 
     launcher.on('launch_compute_download', () => {
@@ -179,7 +226,6 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
       if (total) {
         const downloaded = total.downloaded ?? 0;
         const amount = total.amount ?? '?';
-
         sendStatus(`Загрузка файлов: ${downloaded} из ${amount}`);
       } else {
         sendStatus('Скачиваем файлы Minecraft…');
@@ -191,15 +237,11 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
     });
 
     launcher.on('launch_install_loader', (loader) => {
-      const type = loader?.type || 'мод';
-
-      sendStatus(`Устанавливаем загрузчик ${type}…`);
+      sendStatus(`Устанавливаем загрузчик ${loader?.type || 'мод'}…`);
     });
 
     launcher.on('launch_launch', (info) => {
-      sendStatus(
-        `Запускаем Minecraft ${info?.version || version}…`
-      );
+      sendStatus(`Запускаем Minecraft ${info?.version || version}…`);
     });
 
     launcher.on('launch_close', (code) => {
