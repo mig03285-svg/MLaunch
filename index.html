@@ -4,16 +4,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07101e">
 <title>MLaunch — Minecraft Launcher</title>
 <style>
 :root {
   color-scheme: dark;
   --bg: #07101e;
   --panel: #0e1b30;
+  --panel2: #122541;
   --line: #203655;
   --muted: #9bb0d1;
   --blue: #76a4ff;
   --green: #00d68f;
+  --red: #ff7b87;
 }
 * { box-sizing: border-box; }
 body {
@@ -27,12 +30,17 @@ button {
   cursor: pointer;
   color: white;
   border: 1px solid var(--line);
-  background: #132541;
+  background: var(--panel2);
   border-radius: 10px;
   padding: 11px 15px;
+  transition: border-color .15s, opacity .15s;
 }
 button:hover { border-color: var(--blue); }
-button:disabled { opacity: .6; cursor: wait; }
+button:disabled { opacity: .55; cursor: wait; }
+button:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
 header {
   min-height: 76px;
   display: flex;
@@ -50,11 +58,12 @@ header {
   font-size: 11px;
   font-weight: 400;
   margin-top: 3px;
+  letter-spacing: 1px;
 }
 .search {
   max-width: 420px;
   width: 45%;
-  background: #0d1b31;
+  background: var(--bg);
   border: 1px solid var(--line);
   padding: 12px 15px;
   border-radius: 12px;
@@ -62,7 +71,7 @@ header {
 }
 .layout {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
+  grid-template-columns: 205px minmax(0, 1fr);
   min-height: calc(100vh - 76px);
 }
 aside {
@@ -91,12 +100,14 @@ aside {
   color: var(--muted);
   font-size: 12px;
   padding: 12px;
+  line-height: 1.7;
 }
 main {
   padding: 24px;
   max-width: 1500px;
   width: 100%;
   margin: auto;
+  min-width: 0;
 }
 .hero {
   padding: 32px;
@@ -113,6 +124,7 @@ main {
   letter-spacing: 2px;
 }
 h1 { font-size: clamp(30px, 4vw, 46px); margin: 13px 0; }
+h2 { font-size: 18px; margin: 0 0 16px; }
 p { color: #b5c5df; line-height: 1.6; }
 .primary {
   background: var(--green);
@@ -135,18 +147,17 @@ p { color: #b5c5df; line-height: 1.6; }
   padding: 20px;
   min-width: 0;
 }
-h2 { font-size: 18px; margin: 0 0 16px; }
-select {
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.row select { flex: 1; min-width: 0; }
+.row input { flex: 1; min-width: 0; }
+select, input {
   width: 100%;
   padding: 12px;
-  background: #10213a;
+  background: var(--bg);
   color: white;
   border: 1px solid var(--line);
   border-radius: 9px;
 }
-.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.row select { flex: 1; min-width: 180px; }
-.row input { flex: 1; min-width: 180px; }
 .version {
   display: flex;
   align-items: center;
@@ -157,6 +168,7 @@ select {
 }
 .version:last-child { border-bottom: 0; }
 .tag {
+  display: inline-block;
   font-size: 11px;
   color: #68f5c3;
   background: #103a34;
@@ -167,7 +179,7 @@ select {
 .tile {
   padding: 13px;
   margin-top: 9px;
-  background: #10213a;
+  background: var(--panel2);
   border: 1px solid var(--line);
   border-radius: 10px;
   color: #dbe6fa;
@@ -178,12 +190,15 @@ select {
   color: var(--blue);
   font-size: 13px;
   overflow-wrap: anywhere;
+  line-height: 1.6;
 }
+.status.error { color: var(--red); }
+.status.success { color: var(--green); }
 a { color: var(--blue); }
 footer {
   margin-top: 16px;
   padding: 15px;
-  background: #0e1b30;
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px;
   color: var(--muted);
@@ -191,6 +206,11 @@ footer {
 }
 .page { display: none; }
 .page.active { display: block; }
+.empty {
+  color: var(--muted);
+  padding: 12px 0;
+  font-size: 13px;
+}
 @media (max-width: 760px) {
   header { padding: 14px; }
   .search { order: 3; width: 100%; max-width: none; }
@@ -208,6 +228,7 @@ footer {
   main { padding: 13px; }
   .hero { padding: 22px; }
   .grid { grid-template-columns: 1fr; }
+  .panel { padding: 16px; }
 }
 </style>
 </head>
@@ -216,8 +237,9 @@ footer {
   <div class="logo">M<span style="color:white">Launch</span>
     <small>MINECRAFT JAVA LAUNCHER</small>
   </div>
-  <input class="search" id="search" placeholder="Поиск версий..." aria-label="Поиск версий">
-  <button id="account">👤 Гость</button>
+  <input class="search" id="search" placeholder="Поиск версий..."
+    aria-label="Поиск версий">
+  <button id="account">👤 Войти Microsoft</button>
 </header>
 
 <div class="layout">
@@ -228,7 +250,11 @@ footer {
   <button class="nav" data-page="packs">▣ Сборки</button>
   <button class="nav" data-page="servers">◎ Серверы</button>
   <button class="nav" data-page="settings">⚙ Настройки</button>
-  <div class="sidefoot">● MLaunch работает<br><br>Версия лаунчера: 0.1.0</div>
+  <div class="sidefoot">
+    ● MLaunch<br>
+    Версия лаунчера: 0.1.0<br>
+    Minecraft Java Edition
+  </div>
 </aside>
 
 <main>
@@ -237,12 +263,14 @@ footer {
       <div class="eyebrow">ТВОЙ МИР MINECRAFT</div>
       <h1>Добро пожаловать<br>в MLaunch!</h1>
       <p>Твой лаунчер для Minecraft Java Edition.<br>
-      Выбирай версии, готовь сборки и исследуй миры.</p>
+      Выбирай версию и готовься к игре.</p>
       <div class="actions">
         <button class="primary" id="play">▶ Играть</button>
         <button data-goto="settings">⚙ Настройки</button>
       </div>
-      <div class="status" id="status" role="status">Загружаем список версий...</div>
+      <div class="status" id="status" role="status" aria-live="polite">
+        Загружаем список версий...
+      </div>
     </div>
 
     <div class="grid">
@@ -263,14 +291,17 @@ footer {
 
       <section class="panel">
         <h2>Быстрые действия</h2>
-        <div class="tile">▣ Установка Minecraft
-          <div class="muted">Игровая установка будет подключена следующим этапом</div>
+        <div class="tile">
+          ▣ Установка Minecraft
+          <div class="muted">Файлы игры будут подготовлены при первом запуске.</div>
         </div>
-        <div class="tile">✣ Управление модами
-          <div class="muted">Подготовка раздела</div>
+        <div class="tile">
+          ✣ Моды и загрузчики
+          <div class="muted">Поддержка загрузчиков будет подключена отдельным этапом.</div>
         </div>
-        <div class="tile">◎ Игровые серверы
-          <div class="muted">Добавляй адреса серверов в соответствующем разделе</div>
+        <div class="tile">
+          ◎ Игровые серверы
+          <div class="muted">Сохраняй адреса серверов в разделе «Серверы».</div>
         </div>
       </section>
     </div>
@@ -279,7 +310,7 @@ footer {
   <section class="page" id="versions">
     <div class="panel">
       <h2>Версии Minecraft Java</h2>
-      <p>Выбери тип версий и нужный релиз. Данные загружаются из официального манифеста.</p>
+      <p>Список загружается из официального манифеста Minecraft.</p>
       <div id="allVersions"></div>
     </div>
   </section>
@@ -287,24 +318,26 @@ footer {
   <section class="page" id="mods">
     <div class="panel">
       <h2>Моды</h2>
-      <p>Здесь появится управление модами и загрузчиками Fabric, Forge, NeoForge и Quilt.</p>
+      <p>Раздел подготовлен для будущего управления модами и загрузчиками Fabric, Forge, NeoForge и Quilt.</p>
+      <div class="tile">Функция ещё не подключена.</div>
     </div>
   </section>
 
   <section class="page" id="packs">
     <div class="panel">
       <h2>Сборки</h2>
-      <p>Здесь появится создание отдельных игровых профилей, модпаков, ресурсов и шейдеров.</p>
+      <p>Здесь будет управление игровыми профилями, модпаками, ресурсами и шейдерами.</p>
+      <div class="tile">Создание сборок пока не реализовано.</div>
     </div>
   </section>
 
   <section class="page" id="servers">
     <div class="panel">
       <h2>Серверы</h2>
-      <p>Добавляй адреса серверов в список избранного.</p>
+      <p>Добавляй адреса серверов в локальный список текущего сеанса.</p>
       <div class="row">
-        <input id="serverAddress" class="search" style="width:100%"
-          placeholder="Адрес сервера, например play.example.net">
+        <input id="serverAddress" placeholder="Например, play.example.net"
+          aria-label="Адрес сервера">
         <button id="addServer">Добавить</button>
       </div>
       <div id="serverList"></div>
@@ -314,7 +347,7 @@ footer {
   <section class="page" id="settings">
     <div class="panel">
       <h2>Настройки</h2>
-      <p>Память и Java Runtime подключим вместе с установкой игры.</p>
+      <p>Настройки Java и памяти пока не передаются игровому процессу.</p>
       <label for="ram">Память для Minecraft</label>
       <select id="ram">
         <option>2 ГБ</option>
@@ -322,9 +355,11 @@ footer {
         <option>6 ГБ</option>
         <option>8 ГБ</option>
       </select>
-      <p class="muted">Настройка памяти пока не применяется к игровому процессу.</p>
-      <button id="checkUpdates">Проверить обновления MLaunch</button>
-      <div class="status" id="updateStatus" role="status">Проверка ещё не запускалась.</div>
+      <p class="muted">Изменение этого значения пока не меняет выделение памяти игре.</p>
+      <button id="checkUpdates">Проверить сайт обновлений</button>
+      <div class="status" id="updateStatus" role="status" aria-live="polite">
+        Проверка ещё не запускалась.
+      </div>
     </div>
   </section>
 
@@ -347,14 +382,25 @@ const updateUrl =
 const statusEl = document.getElementById('status');
 const versionSelect = document.getElementById('version');
 const typeSelect = document.getElementById('versionType');
+const playButton = document.getElementById('play');
+const accountButton = document.getElementById('account');
 
 let manifest = null;
 let selectedVersion = '';
+let authName = '';
+let isPlaying = false;
+let isAuthenticating = false;
+
+function setStatus(message, kind = '') {
+  statusEl.textContent = String(message || '');
+  statusEl.className = 'status' + (kind ? ' ' + kind : '');
+}
 
 function showPage(id) {
   document.querySelectorAll('.page').forEach(page => {
     page.classList.toggle('active', page.id === id);
   });
+
   document.querySelectorAll('.nav').forEach(button => {
     button.classList.toggle('active', button.dataset.page === id);
   });
@@ -369,17 +415,17 @@ document.querySelectorAll('[data-goto]').forEach(button => {
 });
 
 function getVersions() {
-  if (!manifest) return [];
-
-  let list = manifest.versions;
+  if (!manifest || !Array.isArray(manifest.versions)) return [];
 
   if (typeSelect.value === 'release') {
-    list = list.filter(version => version.type === 'release');
-  } else if (typeSelect.value === 'snapshot') {
-    list = list.filter(version => version.type === 'snapshot');
+    return manifest.versions.filter(v => v.type === 'release');
   }
 
-  return list;
+  if (typeSelect.value === 'snapshot') {
+    return manifest.versions.filter(v => v.type === 'snapshot');
+  }
+
+  return manifest.versions;
 }
 
 function chooseVersion(version) {
@@ -390,7 +436,7 @@ function chooseVersion(version) {
 
   renderVersions();
   versionSelect.value = version.id;
-  statusEl.textContent = 'Выбрана версия Minecraft Java ' + version.id + '.';
+  setStatus('Выбрана версия Minecraft Java ' + version.id + '.');
 }
 
 function renderVersions() {
@@ -398,7 +444,9 @@ function renderVersions() {
 
   const list = getVersions();
   const search = document.getElementById('search').value.trim().toLowerCase();
-  const filtered = list.filter(version => version.id.toLowerCase().includes(search));
+  const filtered = list.filter(version =>
+    version.id.toLowerCase().includes(search)
+  );
 
   versionSelect.replaceChildren();
 
@@ -421,11 +469,15 @@ function renderVersions() {
     if (!filtered.some(version => version.id === selectedVersion)) {
       selectedVersion = filtered[0].id;
     }
+
     versionSelect.value = selectedVersion;
-    statusEl.textContent = 'Список загружен · доступно версий: ' + list.length;
-  } else {
-    statusEl.textContent = 'По запросу ничего не найдено.';
   }
+
+  setStatus(
+    filtered.length
+      ? 'Список загружен · найдено версий: ' + filtered.length
+      : 'По запросу ничего не найдено.'
+  );
 
   const versionList = document.getElementById('versionList');
   versionList.replaceChildren();
@@ -480,24 +532,34 @@ typeSelect.addEventListener('change', renderVersions);
 
 versionSelect.addEventListener('change', () => {
   selectedVersion = versionSelect.value;
-  statusEl.textContent = 'Выбрана версия Minecraft Java ' + selectedVersion + '.';
+  if (selectedVersion) {
+    setStatus('Выбрана версия Minecraft Java ' + selectedVersion + '.');
+  }
 });
 
 document.getElementById('search').addEventListener('input', renderVersions);
 
 async function loadManifest() {
   try {
-    statusEl.textContent = 'Загружаем официальный список версий...';
+    setStatus('Загружаем официальный список версий…');
 
     const response = await fetch(manifestUrl);
     if (!response.ok) throw new Error('HTTP ' + response.status);
 
-    manifest = await response.json();
-    selectedVersion = manifest.latest.release;
+    const data = await response.json();
+
+    if (!Array.isArray(data.versions) || !data.versions.length) {
+      throw new Error('Пустой список версий');
+    }
+
+    manifest = data;
+    selectedVersion = data.latest?.release || data.versions[0].id;
     renderVersions();
   } catch (error) {
-    statusEl.textContent =
-      'Не удалось загрузить список версий. Проверь подключение к интернету.';
+    setStatus(
+      'Не удалось загрузить список версий. Проверь интернет и попробуй снова.',
+      'error'
+    );
 
     versionSelect.replaceChildren();
     const option = document.createElement('option');
@@ -507,72 +569,102 @@ async function loadManifest() {
   }
 }
 
-document.getElementById('play').addEventListener('click', async () => {
+playButton.addEventListener('click', async () => {
+  if (isPlaying) return;
+
   if (!manifest || !selectedVersion) {
-    statusEl.textContent = 'Сначала дождись загрузки списка версий.';
+    setStatus('Сначала дождись загрузки списка версий.', 'error');
     return;
   }
 
-  const button = document.getElementById('play');
-  button.disabled = true;
+  if (!window.mlaunch ||
+      typeof window.mlaunch.launchGame !== 'function') {
+    setStatus('Игровой мост недоступен. Проверь preload.js.', 'error');
+    return;
+  }
+
+  isPlaying = true;
+  playButton.disabled = true;
+  playButton.textContent = '⏳ Запуск…';
 
   try {
-    if (!window.mlaunch || typeof window.mlaunch.launchGame !== 'function') {
-      statusEl.textContent =
-        'Игровой мост не найден. Проверь preload.js и перезапусти приложение.';
-      return;
-    }
-
-    statusEl.textContent = 'Проверяем состояние игрового движка...';
+    setStatus('Передаём команду запуска Minecraft ' + selectedVersion + '…');
 
     const result = await window.mlaunch.launchGame(selectedVersion);
 
-    if (result && result.message) {
-      statusEl.textContent = result.message;
+    if (result?.ok) {
+      setStatus(
+        result.message || 'Команда запуска Minecraft выполнена.',
+        'success'
+      );
     } else {
-      statusEl.textContent = 'Игровой движок вернул ответ без описания.';
+      setStatus(
+        result?.message || 'Не удалось запустить Minecraft.',
+        'error'
+      );
     }
   } catch (error) {
-    statusEl.textContent =
-      'Не удалось обратиться к игровому движку. Проверь сборку приложения.';
+    setStatus(
+      'Ошибка обращения к игровому движку. Проверь журнал запуска.',
+      'error'
+    );
   } finally {
-    button.disabled = false;
+    isPlaying = false;
+    playButton.disabled = false;
+    playButton.textContent = '▶ Играть';
   }
 });
 
-document.getElementById('account').addEventListener('click', async () => {
-  const button = document.getElementById('account');
+accountButton.addEventListener('click', async () => {
+  if (isAuthenticating) return;
 
   if (!window.mlaunch ||
       typeof window.mlaunch.loginMicrosoft !== 'function') {
-    statusEl.textContent = 'Функция входа недоступна. Проверь preload.js.';
+    setStatus('Функция входа недоступна. Проверь preload.js.', 'error');
     return;
   }
 
-  button.disabled = true;
-  statusEl.textContent = 'Открываем авторизацию Microsoft…';
+  isAuthenticating = true;
+  accountButton.disabled = true;
+  accountButton.textContent = '⏳ Подключение…';
 
   try {
+    setStatus('Открываем авторизацию Microsoft…');
+
     const result = await window.mlaunch.loginMicrosoft();
 
-    if (result && result.ok) {
-      button.textContent = '👤 ' + (result.name || 'Игрок');
-      statusEl.textContent = result.message || 'Вход выполнен.';
+    if (result?.ok) {
+      authName = result.name || 'Игрок';
+      accountButton.textContent = '👤 ' + authName;
+      setStatus(result.message || 'Вход выполнен.', 'success');
     } else {
-      statusEl.textContent =
-        result?.message || 'Не удалось войти через Microsoft.';
+      accountButton.textContent = authName
+        ? '👤 ' + authName
+        : '👤 Войти Microsoft';
+
+      setStatus(
+        result?.message || 'Не удалось войти через Microsoft.',
+        'error'
+      );
     }
   } catch (error) {
-    statusEl.textContent = 'Ошибка авторизации. Попробуй ещё раз.';
+    accountButton.textContent = authName
+      ? '👤 ' + authName
+      : '👤 Войти Microsoft';
+
+    setStatus('Ошибка авторизации. Попробуй ещё раз.', 'error');
   } finally {
-    button.disabled = false;
+    isAuthenticating = false;
+    accountButton.disabled = false;
   }
 });
 
 if (window.mlaunch &&
     typeof window.mlaunch.onProgress === 'function') {
-  window.mlaunch.onProgress((message) => {
-    if (typeof message === 'string') statusEl.textContent = message;
+  window.mlaunch.onProgress(message => {
+    if (typeof message === 'string') {
+      setStatus(message);
+    }
   });
 }
 
@@ -600,7 +692,8 @@ document.getElementById('addServer').addEventListener('click', () => {
 
 document.getElementById('checkUpdates').addEventListener('click', async () => {
   const element = document.getElementById('updateStatus');
-  element.textContent = 'Проверяем обновления...';
+  element.className = 'status';
+  element.textContent = 'Проверяем сайт обновлений…';
 
   try {
     const response = await fetch(updateUrl);
@@ -608,12 +701,14 @@ document.getElementById('checkUpdates').addEventListener('click', async () => {
 
     const data = await response.json();
     const version = data.version || data.websiteVersion || 'не указана';
-    const message = data.message || data.status || 'данные получены';
+    const message = data.message || data.status || 'ответ получен';
 
     element.textContent = 'Версия сайта: ' + version + ' · ' + message;
+    element.classList.add('success');
   } catch (error) {
     element.textContent =
-      'Не удалось проверить обновления. Проверь доступность сайта MLaunch.';
+      'Не удалось проверить сайт обновлений. Попробуй позже.';
+    element.classList.add('error');
   }
 });
 
