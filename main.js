@@ -1,23 +1,33 @@
 
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('node:path');
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1100,
-    height: 720,
-    minWidth: 800,
+    width: 1200,
+    height: 780,
+    minWidth: 850,
     minHeight: 600,
     title: 'MLaunch',
-    backgroundColor: '#0b1020',
+    backgroundColor: '#07101e',
     autoHideMenuBar: true,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      sandbox: true
     }
   });
 
   win.loadFile('index.html');
 }
+
+ipcMain.handle('mlaunch:app-info', () => ({
+  name: 'MLaunch',
+  version: app.getVersion(),
+  platform: process.platform,
+  ready: true
+}));
 
 app.whenReady().then(() => {
   createWindow();
