@@ -11,15 +11,25 @@ let isLaunching = false;
 let authInProgress = false;
 
 function getGameRoot() {
-  // app.getPath('userData') автоматически учитывает Windows и Linux.
-  // EML Lib добавляет точку к имени root самостоятельно.
-  return path.join(app.getPath('userData'), 'game');
+  // EML Lib ожидает имя корневого каталога.
+  return 'mlaunch';
 }
 
 function sendStatus(message) {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('mlaunch:progress', String(message));
+    mainWindow.webContents.send(
+      'mlaunch:progress',
+      String(message)
+    );
   }
+}
+
+function getErrorMessage(error, fallback) {
+  if (error && typeof error.message === 'string' && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
 }
 
 function createWindow() {
@@ -54,13 +64,14 @@ ipcMain.handle('mlaunch:app-info', () => ({
 }));
 
 ipcMain.handle('mlaunch:game-status', () => ({
+  // Фактическое наличие установленных файлов пока не проверяется.
   installed: false,
   launching: isLaunching,
   authenticated: Boolean(account),
   message: isLaunching
     ? 'Minecraft запускается…'
     : account
-      ? `Вход выполнен: ${account.name || 'игрок'}`
+      ? `Вход выполнен: ${account.name || account.username || 'игрок'}`
       : 'Войди через аккаунт Microsoft'
 }));
 
@@ -94,6 +105,7 @@ ipcMain.handle('mlaunch:login', async () => {
     account = result;
 
     const name = account.name || account.username || 'Игрок';
+
     sendStatus(`Вход выполнен: ${name}`);
 
     return {
@@ -104,10 +116,10 @@ ipcMain.handle('mlaunch:login', async () => {
   } catch (error) {
     account = null;
 
-    const message =
-      error && error.message
-        ? error.message
-        : 'Не удалось выполнить вход Microsoft.';
+    const message = getErrorMessage(
+      error,
+      'Не удалось выполнить вход Microsoft.'
+    );
 
     sendStatus(`Ошибка авторизации: ${message}`);
 
@@ -185,7 +197,9 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
     });
 
     launcher.on('launch_launch', (info) => {
-      sendStatus(`Запускаем Minecraft ${info?.version || version}…`);
+      sendStatus(
+        `Запускаем Minecraft ${info?.version || version}…`
+      );
     });
 
     launcher.on('launch_close', (code) => {
@@ -200,15 +214,17 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
 
     await launcher.launch();
 
+    sendStatus(`Команда запуска Minecraft ${version} выполнена.`);
+
     return {
       ok: true,
-      message: 'Команда запуска Minecraft выполнена.'
+      message: `Команда запуска Minecraft ${version} выполнена.`
     };
   } catch (error) {
-    const message =
-      error && error.message
-        ? error.message
-        : 'Не удалось запустить Minecraft.';
+    const message = getErrorMessage(
+      error,
+      'Не удалось запустить Minecraft.'
+    );
 
     sendStatus(`Ошибка запуска: ${message}`);
 
