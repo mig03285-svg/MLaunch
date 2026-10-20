@@ -1,39 +1,38 @@
-
 {
-  "name": "mlaunch",
-  "version": "0.1.0",
-  "description": "Русскоязычный Minecraft Launcher",
-  "main": "main.js",
-  "private": true,
-  "scripts": {
-    "start": "electron .",
-    "build": "electron-builder"
-  },
-  "devDependencies": {
-    "electron": "^39.0.0",
-    "electron-builder": "^26.0.12"
-  },
-  "build": {
-    "appId": "ru.mlaunch.app",
-    "productName": "MLaunch",
-    "directories": {
-      "output": "dist"
-      
-    "files": [
-  "main.js",
-  "preload.js",
-  "index.html",
-  "package.json"
+"name": "mlaunch",
+"version": "0.1.0",
+"description": "Русскоязычный Minecraft Launcher",
+"main": "main.js",
+"private": true,
+"scripts": {
+"start": "electron .",
+"build": "electron-builder"
+},
+"devDependencies": {
+"electron": "^39.0.0",
+"electron-builder": "^26.0.12"
+},
+"build": {
+"appId": "ru.mlaunch.app",
+"productName": "MLaunch",
+"directories": {
+"output": "dist"
+},
+"files": [
+"main.js",
+"preload.js",
+"index.html",
+"package.json"
+],
+"win": {
+"target": [
+"nsis"
 ]
-    "win": {
-      "target": [
-        "nsis"
-      ]
-    },
-    "linux": {
-      "target": [
-        "AppImage"
-      ]
-    }
-  }
+},
+"linux": {
+"target": [
+"AppImage"
+]
+}
+}
 }
