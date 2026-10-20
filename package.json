@@ -18,12 +18,13 @@
     "productName": "MLaunch",
     "directories": {
       "output": "dist"
-    },
+      
     "files": [
-      "main.js",
-      "index.html",
-      "package.json"
-    ],
+  "main.js",
+  "preload.js",
+  "index.html",
+  "package.json"
+]
     "win": {
       "target": [
         "nsis"
