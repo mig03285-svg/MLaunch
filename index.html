@@ -92,7 +92,12 @@ aside {
   font-size: 12px;
   padding: 12px;
 }
-main { padding: 24px; max-width: 1500px; width: 100%; margin: auto; }
+main {
+  padding: 24px;
+  max-width: 1500px;
+  width: 100%;
+  margin: auto;
+}
 .hero {
   padding: 32px;
   border: 1px solid #28466c;
@@ -443,9 +448,7 @@ function renderVersions() {
 
     const choose = document.createElement('button');
     choose.textContent = 'Выбрать';
-    choose.addEventListener('click', () => {
-      chooseVersion(version);
-    });
+    choose.addEventListener('click', () => chooseVersion(version));
 
     row.append(info, choose);
     versionList.appendChild(row);
@@ -487,9 +490,7 @@ async function loadManifest() {
     statusEl.textContent = 'Загружаем официальный список версий...';
 
     const response = await fetch(manifestUrl);
-    if (!response.ok) {
-      throw new Error('HTTP ' + response.status);
-    }
+    if (!response.ok) throw new Error('HTTP ' + response.status);
 
     manifest = await response.json();
     selectedVersion = manifest.latest.release;
@@ -524,7 +525,7 @@ document.getElementById('play').addEventListener('click', async () => {
 
     statusEl.textContent = 'Проверяем состояние игрового движка...';
 
-    const result = await window.mlaunch.launchGame();
+    const result = await window.mlaunch.launchGame(selectedVersion);
 
     if (result && result.message) {
       statusEl.textContent = result.message;
@@ -539,9 +540,41 @@ document.getElementById('play').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('account').addEventListener('click', () => {
-  alert('Авторизация Microsoft ещё не подключена. Она будет добавлена отдельным этапом.');
+document.getElementById('account').addEventListener('click', async () => {
+  const button = document.getElementById('account');
+
+  if (!window.mlaunch ||
+      typeof window.mlaunch.loginMicrosoft !== 'function') {
+    statusEl.textContent = 'Функция входа недоступна. Проверь preload.js.';
+    return;
+  }
+
+  button.disabled = true;
+  statusEl.textContent = 'Открываем авторизацию Microsoft…';
+
+  try {
+    const result = await window.mlaunch.loginMicrosoft();
+
+    if (result && result.ok) {
+      button.textContent = '👤 ' + (result.name || 'Игрок');
+      statusEl.textContent = result.message || 'Вход выполнен.';
+    } else {
+      statusEl.textContent =
+        result?.message || 'Не удалось войти через Microsoft.';
+    }
+  } catch (error) {
+    statusEl.textContent = 'Ошибка авторизации. Попробуй ещё раз.';
+  } finally {
+    button.disabled = false;
+  }
 });
+
+if (window.mlaunch &&
+    typeof window.mlaunch.onProgress === 'function') {
+  window.mlaunch.onProgress((message) => {
+    if (typeof message === 'string') statusEl.textContent = message;
+  });
+}
 
 document.getElementById('addServer').addEventListener('click', () => {
   const input = document.getElementById('serverAddress');
@@ -571,9 +604,7 @@ document.getElementById('checkUpdates').addEventListener('click', async () => {
 
   try {
     const response = await fetch(updateUrl);
-    if (!response.ok) {
-      throw new Error('HTTP ' + response.status);
-    }
+    if (!response.ok) throw new Error('HTTP ' + response.status);
 
     const data = await response.json();
     const version = data.version || data.websiteVersion || 'не указана';
