@@ -10,7 +10,7 @@
     "build": "electron-builder"
   },
   "dependencies": {
-    "eml-lib": "^2.7.4"
+    "@kintare/eml-lib": "^2.7.4"
   },
   "devDependencies": {
     "electron": "^39.0.0",
