@@ -11,15 +11,14 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:14px Arial,sans-serif}
 button,input,select{font:inherit}
-button{cursor:pointer;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 14px;transition:.15s}
+button{cursor:pointer;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
 button:hover{border-color:var(--blue)}
 button:disabled{opacity:.5;cursor:wait}
-input,select{width:100%;padding:12px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:9px;outline:none}
-input:focus,select:focus{border-color:var(--blue)}
+input,select{width:100%;padding:12px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:9px}
 .primary{background:var(--green);color:#07140f;border-color:var(--green);font-weight:bold}
 .danger{color:var(--red)}
 header{display:flex;align-items:center;gap:16px;padding:17px 22px;border-bottom:1px solid var(--line);background:#0b1220;flex-wrap:wrap}
-.logo{font-size:25px;font-weight:900;letter-spacing:-1px;color:var(--green);white-space:nowrap}
+.logo{font-size:25px;font-weight:900;color:var(--green)}
 .logo span{color:white}
 .logo small{display:block;font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:5px}
 .search{max-width:400px;margin-left:auto}
@@ -42,7 +41,6 @@ p{color:var(--muted);line-height:1.65}
 .panel{padding:20px;border:1px solid var(--line);border-radius:15px;background:var(--panel);min-width:0;margin-bottom:15px}
 .field{display:grid;gap:7px;margin:14px 0}
 label{color:#cbd6e9;font-size:13px}
-.muted{color:var(--muted)}.small{font-size:12px}
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .row>*{min-width:0}.row .grow{flex:1}
 .status{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#0b1321;color:var(--muted);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -108,7 +106,7 @@ header{padding:14px}
     <div class="panel">
       <h3>Профиль игрока</h3>
       <div class="big-number" id="playerLabel">Игрок</div>
-      <p>Локальное имя используется в интерфейсе и не заменяет авторизацию Microsoft.</p>
+      <p>Локальное имя используется в интерфейсе. Оно не заменяет авторизацию игрового аккаунта.</p>
       <button data-goto="profile">Настроить профиль</button>
     </div>
   </div>
@@ -142,7 +140,7 @@ header{padding:14px}
   </div>
   <div class="panel">
     <h3>Авторизация</h3>
-    <p>Для запуска лицензированной Minecraft Java Edition войди в аккаунт Microsoft, которому принадлежит игра.</p>
+    <p>Для запуска лицензированной Minecraft Java Edition войди в Microsoft-аккаунт, которому принадлежит игра.</p>
     <button id="profileLogin">Войти Microsoft</button>
   </div>
 </section>
@@ -258,10 +256,24 @@ function getProfile() {
   const profile = readJSON(PROFILE_KEY, {});
   return profile && typeof profile === 'object' ? profile : {};
 }
-function loadProfile() {
+
+async function loadProfile() {
   const profile = getProfile();
   $('playerName').value = profile.name || '';
   $('playerLabel').textContent = profile.name || 'Игрок';
+
+  if (profile.name && window.mlaunch &&
+      typeof window.mlaunch.setLocalProfile === 'function') {
+    try {
+      const result = await window.mlaunch.setLocalProfile(profile.name);
+      if (result && result.ok) {
+        setStatus('profileStatus', result.message, 'good');
+      }
+    } catch (error) {
+      console.error('Не удалось активировать локальный профиль:', error);
+    }
+  }
+
   const skin = readLocal(SKIN_KEY);
   if (skin && skin.startsWith('data:image/png;base64,')) {
     $('skinImage').src = skin;
@@ -269,50 +281,89 @@ function loadProfile() {
     setStatus('skinStatus', 'Загружен локальный предпросмотр. Скин в Minecraft не изменён.');
   }
 }
-$('saveProfile').addEventListener('click', () => {
+
+$('saveProfile').addEventListener('click', async () => {
   const name = $('playerName').value.trim();
+
   if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
     setStatus('profileStatus', 'Имя должно содержать 3–16 латинских букв, цифр или подчёркиваний.', 'error');
     return;
   }
+
   if (!writeLocal(PROFILE_KEY, JSON.stringify({name}))) {
     setStatus('profileStatus', 'Не удалось сохранить профиль.', 'error');
     return;
   }
+
   $('playerLabel').textContent = name;
-  setStatus('profileStatus', 'Профиль «' + name + '» сохранён.', 'good');
+
+  if (window.mlaunch &&
+      typeof window.mlaunch.setLocalProfile === 'function') {
+    try {
+      const result = await window.mlaunch.setLocalProfile(name);
+
+      if (!result || !result.ok) {
+        setStatus('profileStatus',
+          result?.message || 'Не удалось активировать локальный профиль.',
+          'error');
+        return;
+      }
+
+      setStatus('profileStatus', result.message, 'good');
+    } catch (error) {
+      setStatus('profileStatus',
+        'Профиль сохранён, но связь с лаунчером не удалась.',
+        'error');
+    }
+  } else {
+    setStatus('profileStatus',
+      'Профиль сохранён локально. Проверь обновление preload.js.',
+      'error');
+  }
+
+  await refreshAppStatus();
 });
+
 $('skinFile').addEventListener('change', () => {
   const file = $('skinFile').files && $('skinFile').files[0];
   if (!file) return;
+
   if (file.type !== 'image/png' || file.size > 2 * 1024 * 1024) {
     setStatus('skinStatus', 'Выбери PNG-файл размером не более 2 МБ.', 'error');
     $('skinFile').value = '';
     return;
   }
+
   const reader = new FileReader();
+
   reader.onload = () => {
     const img = new Image();
+
     img.onload = () => {
       if (!((img.naturalWidth === 64 && img.naturalHeight === 64) ||
             (img.naturalWidth === 64 && img.naturalHeight === 32))) {
         setStatus('skinStatus', 'Нужен PNG размером 64×64 или 64×32 пикселя.', 'error');
         return;
       }
+
       if (!writeLocal(SKIN_KEY, reader.result)) {
         setStatus('skinStatus', 'Не удалось сохранить изображение.', 'error');
         return;
       }
+
       $('skinImage').src = reader.result;
       $('skinImage').hidden = false;
       setStatus('skinStatus', 'Предпросмотр сохранён. Скин в самой игре не изменён.', 'good');
     };
+
     img.onerror = () => setStatus('skinStatus', 'Не удалось прочитать изображение.', 'error');
     img.src = reader.result;
   };
+
   reader.onerror = () => setStatus('skinStatus', 'Не удалось прочитать файл.', 'error');
   reader.readAsDataURL(file);
 });
+
 $('clearSkin').addEventListener('click', () => {
   try { localStorage.removeItem(SKIN_KEY); } catch {}
   $('skinImage').removeAttribute('src');
@@ -327,38 +378,50 @@ function setSelectedVersion(id) {
   $('versionSelectAlt').value = selectedVersion;
   $('selectedVersionLabel').textContent = selectedVersion || 'Не выбрана';
 }
+
 function filteredVersions() {
   const q = ($('versionSearch').value || $('search').value || '').trim().toLowerCase();
   return versions.filter(v => !q || v.id.toLowerCase().includes(q));
 }
+
 function fillSelect(select, list) {
   const previous = select.value || selectedVersion;
   select.replaceChildren();
+
   if (!list.length) {
     select.add(new Option('Версии не найдены', ''));
     return;
   }
+
   list.forEach(v => {
     select.add(new Option(
       v.id + (v.type === 'release' ? ' · релиз' : v.type === 'snapshot' ? ' · снапшот' : ''),
       v.id
     ));
   });
+
   if (list.some(v => v.id === previous)) select.value = previous;
   else select.value = list[0].id;
 }
+
 function renderVersions() {
   const list = filteredVersions();
   fillSelect($('versionSelectAlt'), list);
+
   const container = $('versionList');
   container.replaceChildren();
+
   list.slice(0, 60).forEach(v => {
     const item = document.createElement('div');
     item.className = 'item';
+
     const title = document.createElement('strong');
     title.textContent = v.id;
+
     const desc = document.createElement('p');
-    desc.textContent = (v.type || 'версия') + (v.releaseTime ? ' · ' + v.releaseTime.slice(0, 10) : '');
+    desc.textContent = (v.type || 'версия') +
+      (v.releaseTime ? ' · ' + v.releaseTime.slice(0, 10) : '');
+
     const button = document.createElement('button');
     button.textContent = 'Выбрать';
     button.addEventListener('click', () => {
@@ -366,82 +429,111 @@ function renderVersions() {
       setStatus('versionsStatus', 'Выбрана версия ' + v.id + '. Для запуска вернись на главную.');
       showPage('home');
     });
+
     item.append(title, desc, button);
     container.append(item);
   });
+
   if (!list.length) {
     const empty = document.createElement('p');
     empty.textContent = versions.length ? 'Ничего не найдено.' : 'Сначала загрузи список версий.';
     container.append(empty);
   }
 }
+
 async function loadVersions() {
   setStatus('versionsStatus', 'Загружаем список версий Mojang…');
   $('refreshVersions').disabled = true;
+
   try {
-    const response = await fetch('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json');
+    const response = await fetch(
+      'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json'
+    );
+
     if (!response.ok) throw new Error('HTTP ' + response.status);
+
     const data = await response.json();
     versions = Array.isArray(data.versions) ? data.versions : [];
+
     if (!versions.length) throw new Error('Список пуст');
+
     const preferred = versions.find(v => v.type === 'release');
     if (!selectedVersion) selectedVersion = preferred ? preferred.id : versions[0].id;
+
     fillSelect($('versionSelect'), versions);
     setSelectedVersion(selectedVersion);
     renderVersions();
+
     setStatus('versionsStatus', 'Загружено версий: ' + versions.length + '.', 'good');
   } catch (error) {
     versions = [];
     $('versionSelect').replaceChildren(new Option('Не удалось загрузить список', ''));
     $('versionSelectAlt').replaceChildren(new Option('Нет списка версий', ''));
     $('versionList').replaceChildren();
-    setStatus('versionsStatus', 'Не удалось загрузить список. Проверь интернет и попробуй ещё раз. ' + (error.message || error), 'error');
+    setStatus('versionsStatus',
+      'Не удалось загрузить список. Проверь интернет и попробуй ещё раз. ' +
+      (error.message || error), 'error');
   } finally {
     $('refreshVersions').disabled = false;
   }
 }
+
 $('versionSelect').addEventListener('change', () => setSelectedVersion($('versionSelect').value));
 $('versionSelectAlt').addEventListener('change', () => setSelectedVersion($('versionSelectAlt').value));
 $('versionSearch').addEventListener('input', renderVersions);
+
 $('search').addEventListener('input', () => {
   $('versionSearch').value = $('search').value;
   renderVersions();
 });
+
 $('chooseVersion').addEventListener('click', () => {
   if ($('versionSelectAlt').value) setSelectedVersion($('versionSelectAlt').value);
   showPage('home');
 });
+
 $('refreshVersions').addEventListener('click', loadVersions);
 
 async function refreshAppStatus() {
   try {
-    if (!window.mlaunch || typeof window.mlaunch.getGameStatus !== 'function') {
+    if (!window.mlaunch ||
+        typeof window.mlaunch.getGameStatus !== 'function') {
       setStatus('gameStatus', 'Основная часть лаунчера недоступна. Проверь preload.js.', 'error');
       return;
     }
+
     const status = await window.mlaunch.getGameStatus();
+
     setStatus('gameStatus',
-      status.message || (status.authenticated ? 'Аккаунт авторизован.' : 'Требуется вход Microsoft.'),
-      status.authenticated ? 'good' : '');
+      status.message || (status.authenticated ? 'Аккаунт авторизован.' : 'Локальный профиль или вход Microsoft.'),
+      status.authenticated || status.localProfile ? 'good' : '');
+
     if (status.launching) setStatus('launchStatus', 'Minecraft запускается…');
   } catch (error) {
-    setStatus('gameStatus', 'Не удалось получить состояние: ' + (error.message || error), 'error');
+    setStatus('gameStatus',
+      'Не удалось получить состояние: ' + (error.message || error), 'error');
   }
 }
+
 async function loginMicrosoft() {
-  if (!window.mlaunch || typeof window.mlaunch.loginMicrosoft !== 'function') {
+  if (!window.mlaunch ||
+      typeof window.mlaunch.loginMicrosoft !== 'function') {
     setStatus('gameStatus', 'Функция входа недоступна. Проверь preload.js.', 'error');
     return;
   }
+
   $('account').disabled = true;
   $('profileLogin').disabled = true;
   setStatus('gameStatus', 'Открываем авторизацию Microsoft…');
+
   try {
     const result = await window.mlaunch.loginMicrosoft();
     const success = Boolean(result && (result.ok === true || result.success === true));
+
     setStatus('gameStatus',
       result && result.message ? result.message : 'Запрос авторизации завершён.',
       success ? 'good' : 'error');
+
     if (success && result.name) $('playerLabel').textContent = result.name;
     await refreshAppStatus();
   } catch (error) {
@@ -451,32 +543,40 @@ async function loginMicrosoft() {
     $('profileLogin').disabled = false;
   }
 }
+
 $('account').addEventListener('click', loginMicrosoft);
 $('profileLogin').addEventListener('click', loginMicrosoft);
 
 async function launchGame() {
   if (launchBusy) return;
+
   if (!selectedVersion) {
     setStatus('launchStatus', 'Сначала выбери версию Minecraft.', 'error');
     showPage('versions');
     return;
   }
-  if (!window.mlaunch || typeof window.mlaunch.launchGame !== 'function') {
+
+  if (!window.mlaunch ||
+      typeof window.mlaunch.launchGame !== 'function') {
     setStatus('launchStatus', 'Функция запуска недоступна. Проверь preload.js.', 'error');
     return;
   }
+
   launchBusy = true;
   $('play').disabled = true;
   $('progress').removeAttribute('value');
   setStatus('launchStatus', 'Передаём запрос на запуск версии ' + selectedVersion + '…');
+
   try {
     const result = await window.mlaunch.launchGame(selectedVersion);
     const success = Boolean(result && (result.ok === true || result.success === true));
+
     setStatus('launchStatus',
       result && result.message ? result.message : 'Запрос на запуск обработан.',
       success ? 'good' : 'error');
   } catch (error) {
-    setStatus('launchStatus', 'Не удалось запустить игру: ' + (error.message || error), 'error');
+    setStatus('launchStatus',
+      'Не удалось запустить игру: ' + (error.message || error), 'error');
   } finally {
     launchBusy = false;
     $('play').disabled = false;
@@ -484,6 +584,7 @@ async function launchGame() {
     await refreshAppStatus();
   }
 }
+
 $('play').addEventListener('click', launchGame);
 
 if (window.mlaunch && typeof window.mlaunch.onProgress === 'function') {
@@ -496,22 +597,28 @@ function loadServers() {
   const servers = readJSON(SERVERS_KEY, []);
   const container = $('serverList');
   container.replaceChildren();
+
   if (!Array.isArray(servers) || !servers.length) {
     const empty = document.createElement('p');
     empty.textContent = 'Список пока пуст.';
     container.append(empty);
     return;
   }
+
   servers.forEach((server, index) => {
     const item = document.createElement('div');
     item.className = 'item';
+
     const title = document.createElement('strong');
     title.textContent = server.name;
+
     const address = document.createElement('p');
     address.textContent = server.address;
+
     const remove = document.createElement('button');
     remove.className = 'danger';
     remove.textContent = 'Удалить';
+
     remove.addEventListener('click', () => {
       const updated = readJSON(SERVERS_KEY, []);
       if (!Array.isArray(updated)) return;
@@ -519,27 +626,35 @@ function loadServers() {
       writeLocal(SERVERS_KEY, JSON.stringify(updated));
       loadServers();
     });
+
     item.append(title, address, remove);
     container.append(item);
   });
 }
+
 $('addServer').addEventListener('click', () => {
   const name = $('serverName').value.trim();
   const address = $('serverAddress').value.trim();
+
   if (!name || !address || address.length > 255) {
     setStatus('serverStatus', 'Укажи название и адрес сервера.', 'error');
     return;
   }
+
   const servers = readJSON(SERVERS_KEY, []);
+
   if (!Array.isArray(servers)) {
     setStatus('serverStatus', 'Не удалось прочитать список серверов.', 'error');
     return;
   }
+
   servers.push({name, address});
+
   if (!writeLocal(SERVERS_KEY, JSON.stringify(servers))) {
     setStatus('serverStatus', 'Не удалось сохранить сервер.', 'error');
     return;
   }
+
   $('serverName').value = '';
   $('serverAddress').value = '';
   loadServers();
@@ -548,33 +663,45 @@ $('addServer').addEventListener('click', () => {
 
 $('checkStatus').addEventListener('click', async () => {
   await refreshAppStatus();
+
   try {
     const info = window.mlaunch && await window.mlaunch.getAppInfo();
-    setStatus('settingsStatus', info ? JSON.stringify(info, null, 2) : 'Информация приложения недоступна.');
+    setStatus('settingsStatus',
+      info ? JSON.stringify(info, null, 2) : 'Информация приложения недоступна.');
   } catch (error) {
     setStatus('settingsStatus', 'Ошибка: ' + (error.message || error), 'error');
   }
 });
 
 async function init() {
-  loadProfile();
+  await loadProfile();
   loadServers();
   await loadVersions();
+
   try {
-    if (window.mlaunch && typeof window.mlaunch.getAppInfo === 'function') {
+    if (window.mlaunch &&
+        typeof window.mlaunch.getAppInfo === 'function') {
       appInfo = await window.mlaunch.getAppInfo();
+
       $('appVersion').textContent = 'Версия ' + (appInfo.version || 'неизвестна');
       $('platform').textContent = 'Платформа: ' + (appInfo.platform || 'неизвестна');
-      setStatus('aboutStatus', 'MLaunch ' + (appInfo.version || '') +
-        '\nПлатформа: ' + (appInfo.platform || '') + '\nИнтерфейс загружен.');
+
+      setStatus('aboutStatus',
+        'MLaunch ' + (appInfo.version || '') +
+        '\nПлатформа: ' + (appInfo.platform || '') +
+        '\nИнтерфейс загружен.');
     } else {
-      setStatus('aboutStatus', 'Основная часть приложения не обнаружена. Проверь preload.js.', 'error');
+      setStatus('aboutStatus',
+        'Основная часть приложения не обнаружена. Проверь preload.js.', 'error');
     }
   } catch (error) {
-    setStatus('aboutStatus', 'Не удалось получить информацию: ' + (error.message || error), 'error');
+    setStatus('aboutStatus',
+      'Не удалось получить информацию: ' + (error.message || error), 'error');
   }
+
   await refreshAppStatus();
 }
+
 init();
 </script>
 </body>
