@@ -3,6 +3,7 @@
 
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
+const fs = require('node:fs');
 const { Launcher, MicrosoftAuth } = require('@kintare/eml-lib');
 
 let mainWindow = null;
@@ -13,6 +14,33 @@ let authInProgress = false;
 
 const GAME_ROOT = 'mlaunch';
 const UPDATE_SITE = 'https://mlaunch-updates.mig03285.workers.dev';
+const PROFILE_FILE = 'local-profile.json';
+
+function profilePath() {
+  return path.join(app.getPath('userData'), PROFILE_FILE);
+}
+
+function loadLocalProfile() {
+  try {
+    const saved = JSON.parse(fs.readFileSync(profilePath(), 'utf8'));
+    const name = String(saved?.name || '').trim();
+
+    if (/^[A-Za-z0-9_]{3,16}$/.test(name)) {
+      localProfile = { name };
+    }
+  } catch {
+    localProfile = null;
+  }
+}
+
+function saveLocalProfile(profile) {
+  fs.mkdirSync(path.dirname(profilePath()), { recursive: true });
+  fs.writeFileSync(
+    profilePath(),
+    JSON.stringify(profile, null, 2),
+    'utf8'
+  );
+}
 
 function sendStatus(message) {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -67,7 +95,7 @@ ipcMain.handle('mlaunch:game-status', () => ({
     : account
       ? `Вход Microsoft выполнен: ${account.name || account.username || 'игрок'}`
       : localProfile
-        ? `Локальный профиль «${localProfile.name}» активен. Для запуска игры требуется поддерживаемая авторизация.`
+        ? `Локальный профиль «${localProfile.name}» сохранён. Для запуска требуется поддерживаемая авторизация.`
         : 'Создай локальный профиль или войди через Microsoft.'
 }));
 
@@ -81,14 +109,24 @@ ipcMain.handle('mlaunch:set-local-profile', (_event, rawName) => {
     };
   }
 
-  localProfile = { name };
+  const profile = { name };
 
-  sendStatus(`Локальный профиль «${name}» активен.`);
+  try {
+    saveLocalProfile(profile);
+    localProfile = profile;
+  } catch (error) {
+    return {
+      ok: false,
+      message: `Не удалось сохранить профиль: ${errorMessage(error, 'ошибка записи файла')}`
+    };
+  }
+
+  sendStatus(`Локальный профиль «${name}» сохранён.`);
 
   return {
     ok: true,
     name,
-    message: `Локальный профиль «${name}» активен.`
+    message: `Локальный профиль «${name}» сохранён.`
   };
 });
 
@@ -98,7 +136,6 @@ ipcMain.handle('mlaunch:game-functions', async () => {
 
   try {
     const response = await fetch(`${UPDATE_SITE}/api/cheats`, {
-      method: 'GET',
       headers: { Accept: 'application/json' },
       signal: controller.signal
     });
@@ -109,28 +146,23 @@ ipcMain.handle('mlaunch:game-functions', async () => {
 
     const data = await response.json();
 
-    const settings = {
-      enabled: data.enabled === true,
-      xray: data.xray === true,
-      fullbright: data.fullbright === true,
-      fly: data.fly === true,
-      speed: data.speed === true,
-      esp: data.esp === true
-    };
-
     return {
       ok: true,
-      settings,
+      settings: {
+        enabled: data.enabled === true,
+        xray: data.xray === true,
+        fullbright: data.fullbright === true,
+        fly: data.fly === true,
+        speed: data.speed === true,
+        esp: data.esp === true
+      },
       message: 'Настройки загружены с сайта MLaunch.'
     };
   } catch (error) {
     return {
       ok: false,
       settings: null,
-      message: errorMessage(
-        error,
-        'Не удалось загрузить настройки игровых функций.'
-      )
+      message: errorMessage(error, 'Не удалось загрузить настройки игровых функций.')
     };
   } finally {
     clearTimeout(timeout);
@@ -139,17 +171,11 @@ ipcMain.handle('mlaunch:game-functions', async () => {
 
 ipcMain.handle('mlaunch:login', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) {
-    return {
-      ok: false,
-      message: 'Окно лаунчера ещё не готово.'
-    };
+    return { ok: false, message: 'Окно лаунчера ещё не готово.' };
   }
 
   if (authInProgress) {
-    return {
-      ok: false,
-      message: 'Авторизация уже выполняется.'
-    };
+    return { ok: false, message: 'Авторизация уже выполняется.' };
   }
 
   authInProgress = true;
@@ -165,8 +191,8 @@ ipcMain.handle('mlaunch:login', async () => {
     }
 
     account = result;
-
     const name = account.name || account.username || 'Игрок';
+
     sendStatus(`Вход Microsoft выполнен: ${name}`);
 
     return {
@@ -176,18 +202,11 @@ ipcMain.handle('mlaunch:login', async () => {
     };
   } catch (error) {
     account = null;
-
-    const message = errorMessage(
-      error,
-      'Не удалось выполнить вход Microsoft.'
-    );
+    const message = errorMessage(error, 'Не удалось выполнить вход Microsoft.');
 
     sendStatus(`Ошибка авторизации: ${message}`);
 
-    return {
-      ok: false,
-      message
-    };
+    return { ok: false, message };
   } finally {
     authInProgress = false;
   }
@@ -195,26 +214,20 @@ ipcMain.handle('mlaunch:login', async () => {
 
 ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
   if (isLaunching) {
-    return {
-      ok: false,
-      message: 'Minecraft уже запускается.'
-    };
+    return { ok: false, message: 'Minecraft уже запускается.' };
   }
 
   const version = String(options?.version || '').trim();
 
   if (!/^[\w.-]+$/.test(version)) {
-    return {
-      ok: false,
-      message: 'Выбери корректную версию Minecraft.'
-    };
+    return { ok: false, message: 'Выбери корректную версию Minecraft.' };
   }
 
   if (!account) {
     return {
       ok: false,
       message: localProfile
-        ? `Локальный профиль «${localProfile.name}» активен, но запуск игры с таким профилем пока не реализован.`
+        ? `Профиль «${localProfile.name}» сохранён, но запуск с локальным профилем ещё не реализован.`
         : 'Сначала создай локальный профиль или войди через Microsoft.'
     };
   }
@@ -273,23 +286,18 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
       message: `Команда запуска Minecraft ${version} выполнена.`
     };
   } catch (error) {
-    const message = errorMessage(
-      error,
-      'Не удалось запустить Minecraft.'
-    );
+    const message = errorMessage(error, 'Не удалось запустить Minecraft.');
 
     sendStatus(`Ошибка запуска: ${message}`);
 
-    return {
-      ok: false,
-      message
-    };
+    return { ok: false, message };
   } finally {
     isLaunching = false;
   }
 });
 
 app.whenReady().then(() => {
+  loadLocalProfile();
   createWindow();
 
   app.on('activate', () => {
