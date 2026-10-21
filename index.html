@@ -4,650 +4,581 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#07101e">
+<meta name="theme-color" content="#080d18">
 <title>MLaunch — Minecraft Launcher</title>
 <style>
 :root {
   color-scheme:dark;
-  --bg:#07101e;--panel:#0e1b30;--panel2:#122541;
-  --line:#203655;--muted:#9bb0d1;--blue:#76a4ff;
-  --green:#00d68f;--red:#ff7b87
+  --bg:#080d18;--panel:#101a2b;--panel2:#16243a;
+  --line:#273750;--text:#f3f6ff;--muted:#9baac2;
+  --green:#53e0a1;--blue:#83aaff;--red:#ff8795
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:#f4f7ff;
-font-family:Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);font:14px Arial,sans-serif}
 button,input,select{font:inherit}
-button{cursor:pointer;color:white;background:var(--panel2);
-border:1px solid var(--line);border-radius:10px;padding:11px 14px}
-button:hover{border-color:var(--blue)}
-button:disabled{opacity:.55;cursor:wait}
-input,select{width:100%;padding:12px;background:var(--bg);
-color:white;border:1px solid var(--line);border-radius:9px}
-header{display:flex;align-items:center;justify-content:space-between;
-gap:14px;flex-wrap:wrap;padding:16px 22px;border-bottom:1px solid var(--line)}
-.logo{font-size:25px;font-weight:800;color:var(--green)}
+button{cursor:pointer;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 14px;transition:.15s}
+button:hover{border-color:var(--blue);transform:translateY(-1px)}
+button:disabled{opacity:.5;cursor:wait;transform:none}
+input,select{width:100%;padding:12px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:9px;outline:none}
+input:focus,select:focus{border-color:var(--blue)}
+.primary{background:var(--green);color:#07140f;border-color:var(--green);font-weight:800}
+.primary:hover{background:#77edb8;border-color:#77edb8}
+.danger{color:var(--red)}
+header{display:flex;align-items:center;gap:16px;padding:17px 22px;border-bottom:1px solid var(--line);background:#0b1220;flex-wrap:wrap}
+.logo{font-size:25px;font-weight:900;letter-spacing:-1px;color:var(--green);white-space:nowrap}
 .logo span{color:white}
-.logo small{display:block;color:var(--muted);font-size:10px;
-letter-spacing:1px;margin-top:4px}
-.search{max-width:400px;width:40%}
-.layout{display:grid;grid-template-columns:205px minmax(0,1fr);
-min-height:calc(100vh - 75px)}
-aside{padding:16px 12px;border-right:1px solid var(--line);
-display:flex;flex-direction:column;gap:7px}
-.nav{width:100%;text-align:left;background:transparent;border-color:transparent}
-.nav.active{background:#10302f;border-color:#145b50;color:#67f5c5}
-.sidefoot{margin-top:auto;padding:12px;color:var(--muted);
-font-size:12px;line-height:1.8}
-main{padding:22px;width:100%;max-width:1450px;margin:auto;min-width:0}
-.hero{padding:28px;border:1px solid #28466c;border-radius:18px;
-background:radial-gradient(ellipse at 85% 10%,#395c8d,transparent 40%),
-linear-gradient(125deg,#172e50,#0e1a2e 70%)}
-.eyebrow{color:#67f5c5;font-size:12px;font-weight:bold;letter-spacing:2px}
-h1{font-size:clamp(30px,4vw,44px);margin:13px 0}
-h2{font-size:20px;margin:0 0 15px}
-h3{font-size:16px;margin:0 0 8px}
-p{color:#b5c5df;line-height:1.6}
-.primary{background:var(--green);color:#06271e;border:0;font-weight:bold}
-.actions,.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.actions{margin-top:18px}
-.row>*{flex:1;min-width:0}
-.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(230px,1fr);
-gap:14px;margin-top:15px}
-.panel{background:var(--panel);border:1px solid var(--line);
-border-radius:15px;padding:19px;margin-bottom:14px;min-width:0}
-.tile{padding:13px;margin-top:9px;background:var(--panel2);
-border:1px solid var(--line);border-radius:10px;overflow-wrap:anywhere}
-.muted{font-size:12px;color:var(--muted);margin-top:5px}
-.status{margin-top:13px;color:var(--blue);font-size:13px;
-line-height:1.6;overflow-wrap:anywhere}
-.error{color:var(--red)!important}.success{color:var(--green)!important}
+.logo small{display:block;font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:5px}
+.search{max-width:400px;margin-left:auto}
+.layout{display:grid;grid-template-columns:210px minmax(0,1fr);min-height:calc(100vh - 82px)}
+aside{border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:7px}
+.nav{width:100%;text-align:left;background:transparent;border-color:transparent;color:#c1cce0}
+.nav.active{background:#15352e;border-color:#285849;color:var(--green)}
+.sidefoot{margin-top:auto;padding:12px;color:var(--muted);font-size:12px;line-height:1.8}
+main{width:100%;max-width:1500px;padding:25px;min-width:0}
 .page{display:none}.page.active{display:block}
-.version{display:flex;justify-content:space-between;align-items:center;
-gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
-.version:last-child{border-bottom:0}
-footer{margin-top:15px;padding:14px;background:var(--panel);
-border:1px solid var(--line);border-radius:10px;
-font-size:12px;color:var(--muted)}
-a{color:var(--blue)}
-.skin-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,260px);
-gap:18px;align-items:start}
-.skin-preview{background:#081322;border:1px dashed #355071;border-radius:14px;
-padding:15px;text-align:center;min-width:0}
-#skinImage{display:block;max-width:100%;max-height:300px;
-object-fit:contain;margin:10px auto;image-rendering:pixelated}
-.avatar{width:64px;height:64px;border-radius:14px;background:var(--panel2);
-display:flex;align-items:center;justify-content:center;font-size:30px;
-border:1px solid var(--line)}
-.field{margin:14px 0}
-.field label{display:block;margin-bottom:7px;color:#dbe6fa}
+h1{font-size:clamp(25px,4vw,36px);margin:0 0 10px}
+h2{font-size:20px;margin:0 0 12px}
+h3{margin:0 0 9px;font-size:16px}
+p{color:var(--muted);line-height:1.65}
+.eyebrow{color:var(--green);font-weight:bold;text-transform:uppercase;letter-spacing:2px;font-size:11px}
+.hero{padding:clamp(22px,4vw,38px);border:1px solid #29466a;border-radius:20px;background:radial-gradient(ellipse at 90% 10%,#1a3d50 0,transparent 45%),linear-gradient(135deg,#14243b,#101a2b 65%);margin-bottom:20px}
+.hero p{max-width:620px}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.panel{padding:20px;border:1px solid var(--line);border-radius:15px;background:var(--panel);min-width:0;margin-bottom:15px}
+.field{display:grid;gap:7px;margin:14px 0}
+label{color:#cbd6e9;font-size:13px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row>*{min-width:0}
+.row .grow{flex:1}
+.status{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#0b1321;color:var(--muted);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.status.good{color:var(--green);border-color:#285849}
+.status.error{color:var(--red);border-color:#60323d}
+.pill{display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px}
+.big-number{font-size:25px;font-weight:800;margin:8px 0}
+.list{display:grid;gap:9px}
+.item{padding:13px;border:1px solid var(--line);border-radius:10px;background:#0c1524}
+.item strong{display:block;margin-bottom:6px}
+.item p{margin:5px 0}
+.skin-preview{width:128px;height:128px;object-fit:contain;image-rendering:pixelated;background:#0a1220;border:1px solid var(--line);border-radius:12px;padding:8px}
+#skinImage[hidden]{display:none}
+progress{width:100%;height:8px;accent-color:var(--green)}
+footer{margin-top:25px;color:var(--muted);font-size:11px}
 @media(max-width:760px){
- header{padding:13px}.search{width:100%;max-width:none;order:3}
  .layout{grid-template-columns:1fr}
- aside{border-right:0;border-bottom:1px solid var(--line);
- display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:7px}
- .nav{text-align:center;padding:10px 3px;font-size:12px}
- .sidefoot{display:none}main{padding:12px}.hero{padding:20px}
- .grid,.skin-layout{grid-template-columns:1fr}.panel{padding:15px}
+ aside{border-right:0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:10px;gap:5px}
+ .nav{text-align:center;padding:10px 4px;font-size:12px}
+ .sidefoot{display:none}
+ main{padding:15px}
+ header{padding:14px}
+ .search{order:3;max-width:none;width:100%;margin:0}
+ .grid{grid-template-columns:1fr}
+}
+@media(max-width:400px){
+ aside{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hero-actions button{width:100%}
 }
 </style>
 </head>
 <body>
 <header>
-  <div class="logo">M<span>Launch</span>
-    <small>MINECRAFT JAVA LAUNCHER</small>
-  </div>
+  <div class="logo">M<span>Launch</span><small>MINECRAFT JAVA LAUNCHER</small></div>
   <input id="search" class="search" placeholder="Поиск версий Minecraft">
-  <button id="account">👤 Войти Microsoft</button>
+  <button id="account">Войти Microsoft</button>
 </header>
 
 <div class="layout">
 <aside>
   <button class="nav active" data-page="home">⌂ Главная</button>
-  <button class="nav" data-page="profile">👤 Профиль и скин</button>
-  <button class="nav" data-page="versions">▤ Версии</button>
-  <button class="nav" data-page="mods">✣ Моды</button>
+  <button class="nav" data-page="profile">♙ Профиль</button>
+  <button class="nav" data-page="versions">▦ Версии</button>
+  <button class="nav" data-page="mods">⚒ Моды</button>
   <button class="nav" data-page="packs">▣ Сборки</button>
-  <button class="nav" data-page="functions">⚡ Функции</button>
   <button class="nav" data-page="servers">◎ Серверы</button>
   <button class="nav" data-page="settings">⚙ Настройки</button>
-  <div class="sidefoot">● MLaunch<br>Версия 0.1.0<br>Minecraft Java Edition</div>
+  <div class="sidefoot">MLaunch<br><span id="appVersion">Загрузка версии…</span><br><span id="platform">Проверка системы…</span></div>
 </aside>
 
 <main>
 <section class="page active" id="home">
   <div class="hero">
-    <div class="eyebrow">ТВОЙ МИР MINECRAFT</div>
-    <h1>Добро пожаловать<br>в MLaunch!</h1>
-    <p>Выбирай версию Minecraft Java Edition и готовься к игре.</p>
-    <div class="actions">
-      <button class="primary" id="play">▶ Играть</button>
-      <button data-goto="profile">👤 Мой профиль</button>
+    <div class="eyebrow">Твой мир начинается здесь</div>
+    <h1>Добро пожаловать в MLaunch</h1>
+    <p>Выбирай версию Minecraft Java Edition, настраивай профиль и готовься к новым приключениям.</p>
+    <div class="hero-actions">
+      <button class="primary" id="play">▶ Запустить Minecraft</button>
+      <button data-goto="versions">Выбрать версию</button>
     </div>
-    <div class="status" id="status" role="status">Загружаем версии…</div>
   </div>
   <div class="grid">
-    <section class="panel">
-      <h2>Выбор версии</h2>
-      <select id="versionType">
-        <option value="release">Стабильные релизы</option>
-        <option value="all">Все версии</option>
-        <option value="snapshot">Снапшоты</option>
-      </select>
-      <div style="margin-top:10px">
-        <select id="version" disabled><option>Загрузка…</option></select>
-      </div>
-      <div id="versionList"></div>
-    </section>
-    <section class="panel">
-      <h2>Быстрые действия</h2>
-      <div class="tile">👤 Профиль игрока
-        <div class="muted">Имя и предпросмотр скина</div>
-        <button data-goto="profile" style="margin-top:10px">Открыть профиль</button>
-      </div>
-      <div class="tile">✣ Моды и загрузчики
-        <div class="muted">Управление модами будет подключено отдельно.</div>
-      </div>
-    </section>
+    <div class="panel">
+      <h3>Текущая версия</h3>
+      <div class="big-number" id="selectedVersionLabel">Загрузка…</div>
+      <div class="field"><label for="versionSelect">Версия для запуска</label><select id="versionSelect"><option value="">Загрузка списка…</option></select></div>
+      <div class="status" id="gameStatus">Проверяем состояние лаунчера…</div>
+    </div>
+    <div class="panel">
+      <h3>Профиль игрока</h3>
+      <div class="big-number" id="playerLabel">Игрок</div>
+      <p>Локальное имя используется в интерфейсе и не заменяет авторизацию Microsoft.</p>
+      <button data-goto="profile">Настроить профиль</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Ход запуска</h3>
+    <div class="status" id="launchStatus">Лаунчер готов к работе.</div>
+    <progress id="progress" max="100" value="0"></progress>
   </div>
 </section>
 
 <section class="page" id="profile">
   <div class="panel">
-    <h2>👤 Профиль игрока</h2>
-    <p>Настрой отображаемое имя и выбери изображение скина для предпросмотра.</p>
-    <div class="skin-layout">
-      <div>
-        <div class="field">
-          <label for="playerName">Имя профиля</label>
-          <input id="playerName" maxlength="16" placeholder="Например, Steve">
-          <div class="muted">От 3 до 16 символов: латинские буквы, цифры и _</div>
-        </div>
-        <div class="actions">
-          <button class="primary" id="saveProfile">Сохранить профиль</button>
-        </div>
-        <div class="status" id="profileStatus" role="status"></div>
-        <div class="tile">
-          <strong>Важно</strong>
-          <p class="muted">Это локальный профиль интерфейса. Он не заменяет
-          Microsoft-авторизацию и сам по себе не меняет имя в игре.</p>
-        </div>
-        <div class="field">
-          <label for="skinFile">Файл скина PNG</label>
-          <input id="skinFile" type="file" accept="image/png">
-          <div class="muted">Файл до 2 МБ. Изображение должно быть PNG.</div>
-        </div>
-        <div class="actions">
-          <button id="clearSkin">Удалить предпросмотр скина</button>
-        </div>
-        <div class="status" id="skinStatus" role="status"></div>
-      </div>
-      <div class="skin-preview">
-        <div class="avatar">👤</div>
-        <h3 id="previewName">Игрок</h3>
-        <img id="skinImage" alt="Предпросмотр выбранного скина"
-          hidden>
-        <div id="skinPlaceholder" class="muted">
-          Скин ещё не выбран
-        </div>
-        <div class="muted">Локальный предпросмотр</div>
+    <div class="eyebrow">Персонализация</div>
+    <h1>Профиль игрока</h1>
+    <p>Задай имя для интерфейса и выбери PNG-изображение для предпросмотра.</p>
+    <div class="field"><label for="playerName">Имя игрока (3–16 символов)</label><input id="playerName" maxlength="16" placeholder="Например, Steve" autocomplete="off"></div>
+    <button class="primary" id="saveProfile">Сохранить профиль</button>
+    <div class="status" id="profileStatus" style="margin-top:12px">Профиль ещё не настроен.</div>
+  </div>
+  <div class="panel">
+    <h2>Предпросмотр скина</h2>
+    <p>Выбери PNG размером 64×64 или 64×32 пикселя. Изображение показывается как картинка, а не как 3D-модель.</p>
+    <div class="row">
+      <img id="skinImage" class="skin-preview" alt="Предпросмотр изображения скина" hidden>
+      <div class="grow">
+        <div class="field"><label for="skinFile">PNG-файл</label><input id="skinFile" type="file" accept="image/png"></div>
+        <button id="clearSkin">Удалить предпросмотр</button>
       </div>
     </div>
+    <div class="status" id="skinStatus" style="margin-top:12px">Скин не выбран.</div>
+  </div>
+  <div class="panel">
+    <h3>Авторизация</h3>
+    <p>Чтобы запускать лицензированную Minecraft Java Edition, войди в аккаунт Microsoft, которому принадлежит игра.</p>
+    <button id="profileLogin">Войти Microsoft</button>
   </div>
 </section>
 
 <section class="page" id="versions">
-  <div class="panel"><h2>Версии Minecraft Java</h2>
-    <p>Версии из официального манифеста Minecraft.</p>
-    <div id="allVersions"></div>
+  <div class="panel">
+    <div class="eyebrow">Игровые версии</div>
+    <h1>Версии Minecraft</h1>
+    <p>Список загружается из официального манифеста Mojang, если доступен интернет.</p>
+    <div class="field"><label for="versionSearch">Фильтр версий</label><input id="versionSearch" placeholder="Например, 1.20.1"></div>
+    <div class="field"><label for="versionSelectAlt">Выбранная версия</label><select id="versionSelectAlt"><option value="">Загрузка списка…</option></select></div>
+    <div class="row"><button class="primary" id="chooseVersion">Выбрать версию</button><button id="refreshVersions">Обновить список</button></div>
+    <div class="status" id="versionsStatus" style="margin-top:12px">Подключение к манифесту…</div>
+    <div class="list" id="versionList" style="margin-top:12px"></div>
   </div>
 </section>
 
 <section class="page" id="mods">
-  <div class="panel"><h2>Моды</h2>
-    <p>Здесь будет управление Fabric, Forge, NeoForge и Quilt.</p>
-    <div class="tile">Установка модов пока не подключена.</div>
+  <div class="panel">
+    <div class="eyebrow">Модификации</div>
+    <h1>Моды</h1>
+    <p>Здесь будет управление модификациями и загрузчиком модов.</p>
+    <div class="item"><strong>Fabric / Forge / NeoForge / Quilt</strong><p>Автоматическая установка загрузчиков ещё не подключена. Наличие этого раздела не означает, что моды уже установлены.</p></div>
+    <div class="status">Следующий этап разработки: установка загрузчика для выбранной версии, каталог модов и управление файлами.</div>
   </div>
 </section>
 
 <section class="page" id="packs">
-  <div class="panel"><h2>Сборки</h2>
-    <p>Управление модпаками, ресурс-паками и шейдерами.</p>
-    <div class="tile">Создание сборок пока не реализовано.</div>
-  </div>
-</section>
-
-<section class="page" id="functions">
   <div class="panel">
-    <div class="row">
-      <h2>⚡ Игровые функции</h2>
-      <button id="refreshFunctions">↻ Обновить</button>
+    <div class="eyebrow">Твои настройки игры</div>
+    <h1>Сборки</h1>
+    <p>Раздел для будущего создания и управления сборками Minecraft.</p>
+    <div class="grid">
+      <div class="item"><strong>Моды</strong><p>Список модификаций сборки.</p></div>
+      <div class="item"><strong>Ресурс-паки</strong><p>Текстуры и оформление.</p></div>
+      <div class="item"><strong>Шейдеры</strong><p>Графические эффекты.</p></div>
+      <div class="item"><strong>Экспорт и импорт</strong><p>Перенос сборок между устройствами.</p></div>
     </div>
-    <div class="tile" id="functionSummary">Настройки ещё не загружены.</div>
-    <div id="functionList"></div>
-    <div class="status" id="functionStatus" role="status"></div>
-    <button id="openAdmin">Открыть сайт MLaunch</button>
-    <p class="muted">Отображение настроек сайта не включает функции внутри игры.</p>
+    <div class="status" style="margin-top:12px">Создание и установка сборок требуют отдельной реализации и пока не активированы.</div>
   </div>
 </section>
 
 <section class="page" id="servers">
-  <div class="panel"><h2>Серверы</h2>
-    <p>Список адресов для текущего сеанса.</p>
-    <div class="row">
-      <input id="serverAddress" placeholder="play.example.net">
-      <button id="addServer">Добавить</button>
-    </div>
-    <div id="serverList"></div>
+  <div class="panel">
+    <div class="eyebrow">Мультиплеер</div>
+    <h1>Серверы</h1>
+    <p>Сохраняй адреса серверов в своём списке. Это не проверяет доступность сервера и не добавляет его автоматически в игру.</p>
+    <div class="field"><label for="serverName">Название сервера</label><input id="serverName" placeholder="Мой сервер"></div>
+    <div class="field"><label for="serverAddress">Адрес сервера</label><input id="serverAddress" placeholder="play.example.net:25565"></div>
+    <button class="primary" id="addServer">Добавить сервер</button>
+    <div class="list" id="serverList" style="margin-top:15px"></div>
+    <div class="status" id="serverStatus" style="margin-top:12px">Список хранится на этом устройстве.</div>
   </div>
 </section>
 
 <section class="page" id="settings">
-  <div class="panel"><h2>Настройки</h2>
-    <label for="ram">Память для Minecraft</label>
-    <select id="ram">
-      <option>2 ГБ</option><option selected>4 ГБ</option>
-      <option>6 ГБ</option><option>8 ГБ</option>
-    </select>
-    <p class="muted">Значение пока не передаётся игровому процессу.</p>
-    <button id="checkUpdates">Проверить сайт обновлений</button>
-    <div class="status" id="updateStatus" role="status"></div>
+  <div class="panel">
+    <div class="eyebrow">Параметры приложения</div>
+    <h1>Настройки</h1>
+    <div class="field"><label for="memoryNote">Оперативная память</label><select id="memoryNote"><option value="auto">Автоматически (пока не подключено)</option><option value="2">2 ГБ</option><option value="4">4 ГБ</option><option value="6">6 ГБ</option><option value="8">8 ГБ</option></select></div>
+    <p>Настройка памяти пока отображается как макет и не меняет параметры Java.</p>
+    <div class="field"><label for="updateUrl">Сайт обновлений MLaunch</label><input id="updateUrl" value="https://mlaunch-updates.mig03285.workers.dev/" readonly></div>
+    <button id="checkStatus">Проверить состояние приложения</button>
+    <div class="status" id="settingsStatus" style="margin-top:12px">Проверка ещё не выполнялась.</div>
+  </div>
+  <div class="panel">
+    <h3>О MLaunch</h3>
+    <p>Русскоязычный лаунчер Minecraft Java Edition. Авторизация и запуск игры выполняются основной частью приложения.</p>
+    <div class="status" id="aboutStatus">Загрузка информации…</div>
   </div>
 </section>
 
-<footer>MLaunch © 2026 · Неофициальный лаунчер Minecraft ·
-<a href="https://mlaunch-updates.mig03285.workers.dev/"
-target="_blank" rel="noopener noreferrer">Сайт MLaunch</a></footer>
+<footer>MLaunch · Русскоязычный Minecraft Launcher</footer>
 </main>
 </div>
 
 <script>
 'use strict';
 
-const manifestUrl =
-  'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json';
-const updateUrl =
-  'https://mlaunch-updates.mig03285.workers.dev/api/latest';
-
 const $ = id => document.getElementById(id);
-let manifest = null;
-let selectedVersion = '';
-let authName = '';
-let isPlaying = false;
-let isAuthenticating = false;
-
-function setStatus(id, message, kind = '') {
-  const el = $(id);
-  el.textContent = String(message || '');
-  el.className = 'status' + (kind ? ' ' + kind : '');
-}
-
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p =>
-    p.classList.toggle('active', p.id === id));
-  document.querySelectorAll('.nav').forEach(b =>
-    b.classList.toggle('active', b.dataset.page === id));
-}
-
-document.querySelectorAll('.nav').forEach(b =>
-  b.addEventListener('click', () => showPage(b.dataset.page)));
-document.querySelectorAll('[data-goto]').forEach(b =>
-  b.addEventListener('click', () => showPage(b.dataset.goto)));
-
-/* Локальный профиль */
 const PROFILE_KEY = 'mlaunch.localProfile.v1';
 const SKIN_KEY = 'mlaunch.skinPreview.v1';
+const SERVERS_KEY = 'mlaunch.servers.v1';
+let versions = [];
+let appInfo = null;
+let selectedVersion = '';
+let launchBusy = false;
 
 function readLocal(key) {
-  try { return localStorage.getItem(key); }
-  catch { return null; }
+  try { return localStorage.getItem(key); } catch { return null; }
 }
 function writeLocal(key, value) {
-  try {
-    localStorage.setItem(key, value);
-    return true;
-  } catch {
-    return false;
-  }
+  try { localStorage.setItem(key, value); return true; } catch { return false; }
 }
+function readJSON(key, fallback) {
+  try { return JSON.parse(readLocal(key) || 'null') ?? fallback; } catch { return fallback; }
+}
+function setStatus(id, message, type='') {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = String(message);
+  el.className = 'status' + (type ? ' ' + type : '');
+}
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(page => page.classList.toggle('active', page.id === id));
+  document.querySelectorAll('.nav').forEach(btn => btn.classList.toggle('active', btn.dataset.page === id));
+  if (id === 'versions') renderVersions();
+}
+document.querySelectorAll('[data-page]').forEach(btn => btn.addEventListener('click', () => showPage(btn.dataset.page)));
+document.querySelectorAll('[data-goto]').forEach(btn => btn.addEventListener('click', () => showPage(btn.dataset.goto)));
 
+function getProfile() {
+  const profile = readJSON(PROFILE_KEY, {});
+  return profile && typeof profile === 'object' ? profile : {};
+}
 function loadProfile() {
-  let profile = {};
-  try { profile = JSON.parse(readLocal(PROFILE_KEY) || '{}') || {}; }
-  catch { profile = {}; }
-
+  const profile = getProfile();
   $('playerName').value = profile.name || '';
-  $('previewName').textContent = profile.name || 'Игрок';
-
+  $('playerLabel').textContent = profile.name || 'Игрок';
   const skin = readLocal(SKIN_KEY);
   if (skin && skin.startsWith('data:image/png;base64,')) {
     $('skinImage').src = skin;
     $('skinImage').hidden = false;
-    $('skinPlaceholder').hidden = true;
+    setStatus('skinStatus', 'Загружен локальный предпросмотр. Скин в Minecraft не изменён.');
   }
 }
-
 $('saveProfile').addEventListener('click', () => {
   const name = $('playerName').value.trim();
-  if (name && !/^[A-Za-z0-9_]{3,16}$/.test(name)) {
-    setStatus('profileStatus',
-      'Имя: 3–16 символов, только A–Z, a–z, 0–9 и _', 'error');
+  if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
+    setStatus('profileStatus', 'Имя должно содержать 3–16 латинских букв, цифр или символов подчёркивания.', 'error');
     return;
   }
-
-  const profile = { name };
-  if (!writeLocal(PROFILE_KEY, JSON.stringify(profile))) {
-    setStatus('profileStatus',
-      'Не удалось сохранить профиль в этом приложении.', 'error');
+  if (!writeLocal(PROFILE_KEY, JSON.stringify({name}))) {
+    setStatus('profileStatus', 'Не удалось сохранить профиль. Возможно, закончилось место.', 'error');
     return;
   }
-
-  $('previewName').textContent = name || 'Игрок';
-  setStatus('profileStatus', 'Профиль сохранён на этом устройстве.', 'success');
+  $('playerLabel').textContent = name;
+  setStatus('profileStatus', 'Профиль «' + name + '» сохранён на этом устройстве.', 'good');
 });
-
-$('skinFile').addEventListener('change', async () => {
-  const file = $('skinFile').files?.[0];
+$('skinFile').addEventListener('change', () => {
+  const file = $('skinFile').files && $('skinFile').files[0];
   if (!file) return;
-
-  if (file.type !== 'image/png' || !file.name.toLowerCase().endsWith('.png')) {
-    setStatus('skinStatus', 'Выбери файл PNG.', 'error');
+  if (file.type !== 'image/png' || file.size > 2 * 1024 * 1024) {
+    setStatus('skinStatus', 'Выбери PNG-файл размером не более 2 МБ.', 'error');
     $('skinFile').value = '';
     return;
   }
-  if (file.size > 2 * 1024 * 1024) {
-    setStatus('skinStatus', 'Файл больше 2 МБ. Выбери файл поменьше.', 'error');
-    $('skinFile').value = '';
-    return;
-  }
-
   const reader = new FileReader();
   reader.onload = () => {
-    const data = reader.result;
-    if (typeof data !== 'string' ||
-        !data.startsWith('data:image/png;base64,')) {
-      setStatus('skinStatus', 'Не удалось прочитать PNG.', 'error');
-      return;
-    }
-
     const img = new Image();
     img.onload = () => {
-      if (!img.naturalWidth || !img.naturalHeight ||
-          img.naturalWidth > 4096 || img.naturalHeight > 4096) {
-        setStatus('skinStatus', 'Размеры изображения не поддерживаются.', 'error');
+      if (!((img.naturalWidth === 64 && img.naturalHeight === 64) ||
+            (img.naturalWidth === 64 && img.naturalHeight === 32))) {
+        setStatus('skinStatus', 'Нужен PNG размером 64×64 или 64×32 пикселя.', 'error');
         return;
       }
-
-      if (!writeLocal(SKIN_KEY, data)) {
-        setStatus('skinStatus',
-          'Не удалось сохранить изображение. Возможно, закончилось место.', 'error');
+      if (!writeLocal(SKIN_KEY, reader.result)) {
+        setStatus('skinStatus', 'Не удалось сохранить изображение. Попробуй файл поменьше.', 'error');
         return;
       }
-
-      $('skinImage').src = data;
+      $('skinImage').src = reader.result;
       $('skinImage').hidden = false;
-      $('skinPlaceholder').hidden = true;
-      setStatus('skinStatus',
-        'PNG сохранён. Это предпросмотр, скин в Minecraft пока не изменён.',
-        'success');
+      setStatus('skinStatus', 'Предпросмотр сохранён. Он не устанавливает скин в саму игру.', 'good');
     };
-    img.onerror = () => setStatus('skinStatus', 'Файл не удалось открыть.', 'error');
-    img.src = data;
+    img.onerror = () => setStatus('skinStatus', 'Не удалось прочитать изображение.', 'error');
+    img.src = reader.result;
   };
-  reader.onerror = () => setStatus('skinStatus', 'Ошибка чтения файла.', 'error');
+  reader.onerror = () => setStatus('skinStatus', 'Не удалось прочитать файл.', 'error');
   reader.readAsDataURL(file);
 });
-
 $('clearSkin').addEventListener('click', () => {
-  try { localStorage.removeItem(SKIN_KEY); }
-  catch {
-    setStatus('skinStatus', 'Не удалось очистить сохранённый скин.', 'error');
-    return;
-  }
+  try { localStorage.removeItem(SKIN_KEY); } catch {}
   $('skinImage').removeAttribute('src');
   $('skinImage').hidden = true;
-  $('skinPlaceholder').hidden = false;
   $('skinFile').value = '';
-  setStatus('skinStatus', 'Предпросмотр скина удалён.', 'success');
+  setStatus('skinStatus', 'Предпросмотр удалён.');
 });
 
-/* Версии Minecraft */
-function getVersions() {
-  if (!manifest) return [];
-  if ($('versionType').value === 'release')
-    return manifest.versions.filter(v => v.type === 'release');
-  if ($('versionType').value === 'snapshot')
-    return manifest.versions.filter(v => v.type === 'snapshot');
-  return manifest.versions;
+function setSelectedVersion(id) {
+  selectedVersion = id || '';
+  $('versionSelect').value = selectedVersion;
+  $('versionSelectAlt').value = selectedVersion;
+  $('selectedVersionLabel').textContent = selectedVersion || 'Не выбрана';
 }
-
-function renderVersions() {
-  if (!manifest) return;
-  const search = $('search').value.trim().toLowerCase();
-  const list = getVersions().filter(v => v.id.toLowerCase().includes(search));
-
-  $('version').replaceChildren();
-  list.slice(0, 500).forEach(v => {
+function filteredVersions() {
+  const q = ($('versionSearch').value || $('search').value || '').trim().toLowerCase();
+  return versions.filter(v => !q || v.id.toLowerCase().includes(q));
+}
+function fillSelect(select, list) {
+  const previous = select.value || selectedVersion;
+  select.replaceChildren();
+  if (!list.length) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'Версии не найдены';
+    select.append(option);
+    return;
+  }
+  list.forEach(v => {
     const option = document.createElement('option');
     option.value = v.id;
-    option.textContent = v.id;
-    $('version').appendChild(option);
+    option.textContent = v.id + (v.type === 'release' ? ' · релиз' : v.type === 'snapshot' ? ' · снапшот' : '');
+    select.append(option);
   });
-  $('version').disabled = !list.length;
-
-  if (list.length) {
-    if (!list.some(v => v.id === selectedVersion)) selectedVersion = list[0].id;
-    $('version').value = selectedVersion;
-  } else {
-    const option = document.createElement('option');
-    option.textContent = 'Нет совпадений';
-    $('version').appendChild(option);
-  }
-
-  setStatus('status', list.length
-    ? 'Список загружен · найдено версий: ' + list.length
-    : 'По запросу ничего не найдено.');
-
-  $('versionList').replaceChildren();
-  $('allVersions').replaceChildren();
-
-  list.slice(0, 100).forEach(v => {
-    const row = document.createElement('div');
-    row.className = 'version';
-    const label = document.createElement('span');
-    label.textContent = v.id + ' · ' + v.type;
+  if (list.some(v => v.id === previous)) select.value = previous;
+  else if (list.some(v => v.id === selectedVersion)) select.value = selectedVersion;
+  else select.value = list[0].id;
+}
+function renderVersions() {
+  const list = filteredVersions();
+  fillSelect($('versionSelectAlt'), list);
+  const container = $('versionList');
+  container.replaceChildren();
+  list.slice(0, 60).forEach(v => {
+    const item = document.createElement('div');
+    item.className = 'item';
+    const title = document.createElement('strong');
+    title.textContent = v.id;
+    const desc = document.createElement('p');
+    desc.textContent = (v.type || 'версия') + (v.releaseTime ? ' · ' + v.releaseTime.slice(0,10) : '');
     const button = document.createElement('button');
     button.textContent = 'Выбрать';
     button.addEventListener('click', () => {
-      selectedVersion = v.id;
-      $('versionType').value = v.type === 'snapshot' ? 'snapshot' :
-        v.type === 'release' ? 'release' : 'all';
-      renderVersions();
-      $('version').value = v.id;
+      setSelectedVersion(v.id);
+      setStatus('versionsStatus', 'Выбрана версия ' + v.id + '. Для запуска вернись на главную.');
       showPage('home');
-      setStatus('status', 'Выбрана версия ' + v.id + '.');
     });
-    row.append(label, button);
-    $('allVersions').appendChild(row);
+    item.append(title, desc, button);
+    container.append(item);
   });
-
-  list.slice(0, 8).forEach(v => {
-    const row = document.createElement('div');
-    row.className = 'version';
-    const label = document.createElement('span');
-    label.textContent = v.id;
-    const button = document.createElement('button');
-    button.textContent = 'Выбрать';
-    button.addEventListener('click', () => {
-      selectedVersion = v.id;
-      $('version').value = v.id;
-      setStatus('status', 'Выбрана версия ' + v.id + '.');
-    });
-    row.append(label, button);
-    $('versionList').appendChild(row);
-  });
-}
-
-$('versionType').addEventListener('change', renderVersions);
-$('search').addEventListener('input', renderVersions);
-$('version').addEventListener('change', () => {
-  selectedVersion = $('version').value;
-});
-
-async function loadManifest() {
-  try {
-    setStatus('status', 'Загружаем официальный список версий…');
-    const response = await fetch(manifestUrl);
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    manifest = await response.json();
-    if (!Array.isArray(manifest.versions) || !manifest.versions.length)
-      throw new Error('Пустой список версий');
-    selectedVersion = manifest.latest?.release || manifest.versions[0].id;
-    renderVersions();
-  } catch {
-    setStatus('status',
-      'Не удалось загрузить версии. Проверь подключение к интернету.', 'error');
+  if (!list.length) {
+    const empty = document.createElement('p');
+    empty.textContent = 'Ничего не найдено.';
+    container.append(empty);
   }
 }
+async function loadVersions() {
+  setStatus('versionsStatus', 'Загружаем список версий Mojang…');
+  try {
+    const response = await fetch('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json');
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
+    versions = Array.isArray(data.versions) ? data.versions : [];
+    if (!versions.length) throw new Error('Список пуст');
+    const preferred = versions.find(v => v.type === 'release');
+    if (!selectedVersion) setSelectedVersion(preferred ? preferred.id : versions[0].id);
+    fillSelect($('versionSelect'), versions);
+    renderVersions();
+    setStatus('versionsStatus', 'Загружено версий: ' + versions.length + '. Выбери нужную версию.', 'good');
+  } catch (error) {
+    versions = [];
+    $('versionSelect').replaceChildren(new Option('Не удалось загрузить список', ''));
+    $('versionSelectAlt').replaceChildren(new Option('Нет списка версий', ''));
+    setStatus('versionsStatus', 'Не удалось получить список версий. Проверь подключение к интернету и попробуй обновить. Подробности: ' + (error.message || error), 'error');
+    $('versionList').replaceChildren();
+  }
+}
+$('versionSelect').addEventListener('change', () => setSelectedVersion($('versionSelect').value));
+$('versionSelectAlt').addEventListener('change', () => setSelectedVersion($('versionSelectAlt').value));
+$('versionSearch').addEventListener('input', renderVersions);
+$('search').addEventListener('input', () => {
+  $('versionSearch').value = $('search').value;
+  renderVersions();
+});
+$('chooseVersion').addEventListener('click', () => {
+  const id = $('versionSelectAlt').value;
+  if (id) setSelectedVersion(id);
+  showPage('home');
+});
+$('refreshVersions').addEventListener('click', loadVersions);
 
-/* Microsoft-вход и запуск — существующий мост preload.js */
-$('play').addEventListener('click', async () => {
-  if (isPlaying) return;
+async function refreshAppStatus() {
+  try {
+    if (!window.mlaunch || typeof window.mlaunch.getGameStatus !== 'function') {
+      setStatus('gameStatus', 'Основной интерфейс лаунчера недоступен. Проверь preload.js.', 'error');
+      return;
+    }
+    const status = await window.mlaunch.getGameStatus();
+    setStatus('gameStatus', status.message || (status.authenticated ? 'Аккаунт авторизован.' : 'Требуется вход Microsoft.'), status.authenticated ? 'good' : '');
+    if (status.launching) setStatus('launchStatus', 'Minecraft запускается…');
+  } catch (error) {
+    setStatus('gameStatus', 'Не удалось получить состояние игры: ' + (error.message || error), 'error');
+  }
+}
+async function loginMicrosoft() {
+  if (!window.mlaunch || typeof window.mlaunch.loginMicrosoft !== 'function') {
+    setStatus('gameStatus', 'Функция входа недоступна. Проверь preload.js.', 'error');
+    return;
+  }
+  $('account').disabled = true;
+  $('profileLogin').disabled = true;
+  setStatus('gameStatus', 'Открываем авторизацию Microsoft…');
+  try {
+    const result = await window.mlaunch.loginMicrosoft();
+    setStatus('gameStatus', result && result.message ? result.message : 'Запрос авторизации завершён. Проверяем состояние…', result && result.success ? 'good' : '');
+    await refreshAppStatus();
+  } catch (error) {
+    setStatus('gameStatus', 'Ошибка входа: ' + (error.message || error), 'error');
+  } finally {
+    $('account').disabled = false;
+    $('profileLogin').disabled = false;
+  }
+}
+$('account').addEventListener('click', loginMicrosoft);
+$('profileLogin').addEventListener('click', loginMicrosoft);
+
+async function launchGame() {
+  if (launchBusy) return;
   if (!selectedVersion) {
-    setStatus('status', 'Сначала дождись загрузки списка версий.', 'error');
+    setStatus('launchStatus', 'Сначала выбери версию Minecraft.', 'error');
+    showPage('versions');
     return;
   }
   if (!window.mlaunch || typeof window.mlaunch.launchGame !== 'function') {
-    setStatus('status', 'Игровой мост недоступен. Проверь preload.js.', 'error');
+    setStatus('launchStatus', 'Функция запуска недоступна. Проверь preload.js.', 'error');
     return;
   }
-
-  isPlaying = true;
+  launchBusy = true;
   $('play').disabled = true;
-  $('play').textContent = '⏳ Запуск…';
+  $('progress').removeAttribute('value');
+  setStatus('launchStatus', 'Передаём запрос на запуск версии ' + selectedVersion + '…');
   try {
-    setStatus('status', 'Передаём команду запуска Minecraft ' + selectedVersion + '…');
     const result = await window.mlaunch.launchGame(selectedVersion);
-    setStatus('status', result?.message ||
-      (result?.ok ? 'Команда запуска выполнена.' : 'Не удалось запустить игру.'),
-      result?.ok ? 'success' : 'error');
-  } catch {
-    setStatus('status', 'Ошибка обращения к игровому движку.', 'error');
+    setStatus('launchStatus', result && result.message ? result.message : 'Запрос на запуск обработан основной частью лаунчера.', result && result.success ? 'good' : '');
+  } catch (error) {
+    setStatus('launchStatus', 'Не удалось запустить игру: ' + (error.message || error), 'error');
   } finally {
-    isPlaying = false;
+    launchBusy = false;
     $('play').disabled = false;
-    $('play').textContent = '▶ Играть';
+    $('progress').value = 0;
+    await refreshAppStatus();
   }
-});
-
-$('account').addEventListener('click', async () => {
-  if (isAuthenticating) return;
-  if (!window.mlaunch || typeof window.mlaunch.loginMicrosoft !== 'function') {
-    setStatus('status', 'Вход недоступен. Проверь preload.js.', 'error');
-    return;
-  }
-  isAuthenticating = true;
-  $('account').disabled = true;
-  $('account').textContent = '⏳ Подключение…';
-  try {
-    setStatus('status', 'Открываем авторизацию Microsoft…');
-    const result = await window.mlaunch.loginMicrosoft();
-    if (result?.ok) {
-      authName = result.name || 'Игрок';
-      $('account').textContent = '👤 ' + authName;
-      setStatus('status', result.message || 'Вход выполнен.', 'success');
-    } else {
-      $('account').textContent = authName ? '👤 ' + authName : '👤 Войти Microsoft';
-      setStatus('status', result?.message || 'Не удалось войти.', 'error');
-    }
-  } catch {
-    $('account').textContent = authName ? '👤 ' + authName : '👤 Войти Microsoft';
-    setStatus('status', 'Ошибка авторизации. Попробуй ещё раз.', 'error');
-  } finally {
-    isAuthenticating = false;
-    $('account').disabled = false;
-  }
-});
+}
+$('play').addEventListener('click', launchGame);
 
 if (window.mlaunch && typeof window.mlaunch.onProgress === 'function') {
   window.mlaunch.onProgress(message => {
-    if (typeof message === 'string') setStatus('status', message);
+    setStatus('launchStatus', String(message));
   });
 }
 
-/* Игровые функции с сайта */
-const functionNames = {
-  xray:'Рентген (X-Ray)', fullbright:'Полная яркость',
-  fly:'Полёт (Fly)', speed:'Ускорение (Speed)', esp:'Подсветка (ESP)'
-};
-
-async function refreshFunctions() {
-  setStatus('functionStatus', 'Загружаем настройки…');
-  try {
-    if (!window.mlaunch ||
-        typeof window.mlaunch.getGameFunctions !== 'function')
-      throw new Error('Игровой мост не найден.');
-    const result = await window.mlaunch.getGameFunctions();
-    if (!result?.ok || !result.settings)
-      throw new Error(result?.message || 'Не удалось получить настройки.');
-
-    $('functionList').replaceChildren();
-    Object.keys(functionNames).forEach(key => {
-      const row = document.createElement('div');
-      row.className = 'tile';
-      row.textContent = functionNames[key] + ': ' +
-        (result.settings[key] ? 'включено на сайте' : 'выключено на сайте');
-      $('functionList').appendChild(row);
+function loadServers() {
+  const servers = readJSON(SERVERS_KEY, []);
+  const container = $('serverList');
+  container.replaceChildren();
+  if (!Array.isArray(servers) || !servers.length) {
+    const empty = document.createElement('p');
+    empty.textContent = 'Список пока пуст.';
+    container.append(empty);
+    return;
+  }
+  servers.forEach((server, index) => {
+    const item = document.createElement('div');
+    item.className = 'item';
+    const title = document.createElement('strong');
+    title.textContent = server.name;
+    const address = document.createElement('p');
+    address.textContent = server.address;
+    const remove = document.createElement('button');
+    remove.className = 'danger';
+    remove.textContent = 'Удалить';
+    remove.addEventListener('click', () => {
+      const updated = readJSON(SERVERS_KEY, []);
+      updated.splice(index, 1);
+      writeLocal(SERVERS_KEY, JSON.stringify(updated));
+      loadServers();
     });
-    $('functionSummary').textContent = result.settings.enabled
-      ? 'Общие настройки включены на сайте.'
-      : 'Общие настройки выключены на сайте.';
-    setStatus('functionStatus', 'Настройки загружены.', 'success');
-  } catch (error) {
-    setStatus('functionStatus', error.message || 'Ошибка загрузки настроек.', 'error');
-  }
+    item.append(title, address, remove);
+    container.append(item);
+  });
 }
-
-$('refreshFunctions').addEventListener('click', refreshFunctions);
-$('openAdmin').addEventListener('click', () =>
-  window.open('https://mlaunch-updates.mig03285.workers.dev/',
-    '_blank', 'noopener,noreferrer'));
-
-/* Локальный список серверов */
 $('addServer').addEventListener('click', () => {
-  const input = $('serverAddress');
-  const value = input.value.trim();
-  if (!value) return;
-
-  const row = document.createElement('div');
-  row.className = 'tile';
-  const label = document.createElement('span');
-  label.textContent = value;
-  const remove = document.createElement('button');
-  remove.textContent = 'Удалить';
-  remove.style.marginLeft = '10px';
-  remove.addEventListener('click', () => row.remove());
-  row.append(label, remove);
-  $('serverList').appendChild(row);
-  input.value = '';
+  const name = $('serverName').value.trim();
+  const address = $('serverAddress').value.trim();
+  if (!name || !address || address.length > 255) {
+    setStatus('serverStatus', 'Укажи название и адрес сервера.', 'error');
+    return;
+  }
+  const servers = readJSON(SERVERS_KEY, []);
+  if (!Array.isArray(servers)) {
+    setStatus('serverStatus', 'Не удалось прочитать список серверов.', 'error');
+    return;
+  }
+  servers.push({name, address});
+  if (!writeLocal(SERVERS_KEY, JSON.stringify(servers))) {
+    setStatus('serverStatus', 'Не удалось сохранить сервер.', 'error');
+    return;
+  }
+  $('serverName').value = '';
+  $('serverAddress').value = '';
+  loadServers();
+  setStatus('serverStatus', 'Сервер сохранён в локальном списке.', 'good');
 });
 
-/* Проверка сайта обновлений */
-$('checkUpdates').addEventListener('click', async () => {
-  setStatus('updateStatus', 'Проверяем сайт обновлений…');
+$('checkStatus').addEventListener('click', async () => {
+  await refreshAppStatus();
   try {
-    const response = await fetch(updateUrl);
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const data = await response.json();
-    setStatus('updateStatus',
-      'Версия сайта: ' + (data.version || data.websiteVersion || 'не указана') +
-      ' · ' + (data.message || data.status || 'ответ получен'), 'success');
-  } catch {
-    setStatus('updateStatus', 'Не удалось проверить сайт обновлений.', 'error');
+    const info = window.mlaunch && await window.mlaunch.getAppInfo();
+    setStatus('settingsStatus', info ? JSON.stringify(info, null, 2) : 'Информация приложения недоступна.');
+  } catch (error) {
+    setStatus('settingsStatus', 'Ошибка: ' + (error.message || error), 'error');
   }
 });
-
-loadProfile();
-loadManifest();
+async function init() {
+  loadProfile();
+  loadServers();
+  await loadVersions();
+  try {
+    if (window.mlaunch && typeof window.mlaunch.getAppInfo === 'function') {
+      appInfo = await window.mlaunch.getAppInfo();
+      $('appVersion').textContent = 'Версия ' + (appInfo.version || 'неизвестна');
+      $('platform').textContent = 'Платформа: ' + (appInfo.platform || 'неизвестна');
+      setStatus('aboutStatus', 'MLaunch ' + (appInfo.version || '') + '\nПлатформа: ' + (appInfo.platform || '') + '\nИнтерфейс загружен.');
+    } else {
+      setStatus('aboutStatus', 'Основная часть приложения не обнаружена. Проверь preload.js.', 'error');
+    }
+  } catch (error) {
+    setStatus('aboutStatus', 'Не удалось получить информацию: ' + (error.message || error), 'error');
+  }
+  await refreshAppStatus();
+}
+init();
 </script>
 </body>
 </html>
