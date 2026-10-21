@@ -8,8 +8,10 @@ contextBridge.exposeInMainWorld('mlaunch', {
 
   getGameStatus: () => ipcRenderer.invoke('mlaunch:game-status'),
 
-  getGameFunctions: () =>
-    ipcRenderer.invoke('mlaunch:game-functions'),
+  getGameFunctions: () => ipcRenderer.invoke('mlaunch:game-functions'),
+
+  setLocalProfile: (name) =>
+    ipcRenderer.invoke('mlaunch:set-local-profile', name),
 
   loginMicrosoft: () => ipcRenderer.invoke('mlaunch:login'),
 
@@ -17,9 +19,7 @@ contextBridge.exposeInMainWorld('mlaunch', {
     ipcRenderer.invoke('mlaunch:launch', { version }),
 
   onProgress: (callback) => {
-    if (typeof callback !== 'function') {
-      return () => {};
-    }
+    if (typeof callback !== 'function') return () => {};
 
     const listener = (_event, message) => callback(message);
 
