@@ -20,38 +20,74 @@ function profilePath() {
   return path.join(app.getPath('userData'), PROFILE_FILE);
 }
 
+function errorMessage(error, fallback) {
+  if (error && typeof error.message === 'string' && error.message.trim()) {
+    return error.message.trim().slice(0, 500);
+  }
+
+  return fallback;
+}
+
+function sendStatus(message) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  mainWindow.webContents.send('mlaunch:progress', String(message));
+}
+
 function loadLocalProfile() {
   try {
     const saved = JSON.parse(fs.readFileSync(profilePath(), 'utf8'));
     const name = String(saved?.name || '').trim();
 
-    if (/^[A-Za-z0-9_]{3,16}$/.test(name)) {
-      localProfile = { name };
-    }
+    localProfile = /^[A-Za-z0-9_]{3,16}$/.test(name)
+      ? { name }
+      : null;
   } catch {
     localProfile = null;
   }
 }
 
-function saveLocalProfile(profile) {
-  fs.mkdirSync(path.dirname(profilePath()), { recursive: true });
+function saveLocalProfile(name) {
+  const file = profilePath();
+
+  fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(
-    profilePath(),
-    JSON.stringify(profile, null, 2),
+    file,
+    JSON.stringify({ name }, null, 2),
     'utf8'
   );
 }
 
-function sendStatus(message) {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('mlaunch:progress', String(message));
-  }
-}
+function getStatus() {
+  const authenticated = Boolean(account);
 
-function errorMessage(error, fallback) {
-  return error && typeof error.message === 'string' && error.message.trim()
-    ? error.message
-    : fallback;
+  let message;
+
+  if (isLaunching) {
+    message = 'Minecraft запускается…';
+  } else if (authInProgress) {
+    message = 'Выполняется авторизация Microsoft…';
+  } else if (authenticated) {
+    message = `Вход Microsoft выполнен: ${
+      account.name || account.username || 'Игрок'
+    }`;
+  } else if (localProfile) {
+    message =
+      `Локальный профиль «${localProfile.name}» сохранён. ` +
+      'Для запуска требуется поддерживаемая авторизация.';
+  } else {
+    message = 'Создай локальный профиль или войди через Microsoft.';
+  }
+
+  return {
+    installed: null,
+    launching: isLaunching,
+    authenticating: authInProgress,
+    authenticated,
+    canLaunch: authenticated && !isLaunching && !authInProgress,
+    localProfile: localProfile ? { ...localProfile } : null,
+    message
+  };
 }
 
 function createWindow() {
@@ -85,19 +121,7 @@ ipcMain.handle('mlaunch:app-info', () => ({
   ready: true
 }));
 
-ipcMain.handle('mlaunch:game-status', () => ({
-  installed: false,
-  launching: isLaunching,
-  authenticated: Boolean(account),
-  localProfile: localProfile ? { ...localProfile } : null,
-  message: isLaunching
-    ? 'Minecraft запускается…'
-    : account
-      ? `Вход Microsoft выполнен: ${account.name || account.username || 'игрок'}`
-      : localProfile
-        ? `Локальный профиль «${localProfile.name}» сохранён. Для запуска требуется поддерживаемая авторизация.`
-        : 'Создай локальный профиль или войди через Microsoft.'
-}));
+ipcMain.handle('mlaunch:game-status', () => getStatus());
 
 ipcMain.handle('mlaunch:set-local-profile', (_event, rawName) => {
   const name = String(rawName || '').trim();
@@ -105,29 +129,30 @@ ipcMain.handle('mlaunch:set-local-profile', (_event, rawName) => {
   if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
     return {
       ok: false,
-      message: 'Имя должно содержать 3–16 латинских букв, цифр или подчёркиваний.'
+      message:
+        'Имя должно содержать 3–16 латинских букв, цифр или подчёркиваний.'
     };
   }
 
-  const profile = { name };
-
   try {
-    saveLocalProfile(profile);
-    localProfile = profile;
+    saveLocalProfile(name);
+    localProfile = { name };
+
+    sendStatus(`Локальный профиль «${name}» сохранён.`);
+
+    return {
+      ok: true,
+      name,
+      message: `Локальный профиль «${name}» сохранён.`
+    };
   } catch (error) {
     return {
       ok: false,
-      message: `Не удалось сохранить профиль: ${errorMessage(error, 'ошибка записи файла')}`
+      message: `Не удалось сохранить профиль: ${
+        errorMessage(error, 'ошибка записи файла')
+      }`
     };
   }
-
-  sendStatus(`Локальный профиль «${name}» сохранён.`);
-
-  return {
-    ok: true,
-    name,
-    message: `Локальный профиль «${name}» сохранён.`
-  };
 });
 
 ipcMain.handle('mlaunch:game-functions', async () => {
@@ -162,7 +187,10 @@ ipcMain.handle('mlaunch:game-functions', async () => {
     return {
       ok: false,
       settings: null,
-      message: errorMessage(error, 'Не удалось загрузить настройки игровых функций.')
+      message: errorMessage(
+        error,
+        'Не удалось загрузить настройки игровых функций.'
+      )
     };
   } finally {
     clearTimeout(timeout);
@@ -171,18 +199,30 @@ ipcMain.handle('mlaunch:game-functions', async () => {
 
 ipcMain.handle('mlaunch:login', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) {
-    return { ok: false, message: 'Окно лаунчера ещё не готово.' };
+    return {
+      ok: false,
+      message: 'Окно лаунчера ещё не готово.'
+    };
   }
 
   if (authInProgress) {
-    return { ok: false, message: 'Авторизация уже выполняется.' };
+    return {
+      ok: false,
+      message: 'Авторизация уже выполняется.'
+    };
+  }
+
+  if (isLaunching) {
+    return {
+      ok: false,
+      message: 'Дождись завершения запуска Minecraft.'
+    };
   }
 
   authInProgress = true;
+  sendStatus('Открываем авторизацию Microsoft…');
 
   try {
-    sendStatus('Открываем авторизацию Microsoft…');
-
     const auth = new MicrosoftAuth(mainWindow);
     const result = await auth.auth();
 
@@ -191,6 +231,7 @@ ipcMain.handle('mlaunch:login', async () => {
     }
 
     account = result;
+
     const name = account.name || account.username || 'Игрок';
 
     sendStatus(`Вход Microsoft выполнен: ${name}`);
@@ -202,11 +243,18 @@ ipcMain.handle('mlaunch:login', async () => {
     };
   } catch (error) {
     account = null;
-    const message = errorMessage(error, 'Не удалось выполнить вход Microsoft.');
+
+    const message = errorMessage(
+      error,
+      'Не удалось выполнить вход Microsoft.'
+    );
 
     sendStatus(`Ошибка авторизации: ${message}`);
 
-    return { ok: false, message };
+    return {
+      ok: false,
+      message
+    };
   } finally {
     authInProgress = false;
   }
@@ -214,29 +262,46 @@ ipcMain.handle('mlaunch:login', async () => {
 
 ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
   if (isLaunching) {
-    return { ok: false, message: 'Minecraft уже запускается.' };
+    return {
+      ok: false,
+      message: 'Minecraft уже запускается.'
+    };
+  }
+
+  if (authInProgress) {
+    return {
+      ok: false,
+      message: 'Сначала дождись завершения авторизации.'
+    };
   }
 
   const version = String(options?.version || '').trim();
 
   if (!/^[\w.-]+$/.test(version)) {
-    return { ok: false, message: 'Выбери корректную версию Minecraft.' };
+    return {
+      ok: false,
+      message: 'Выбери корректную версию Minecraft.'
+    };
   }
 
   if (!account) {
+    const message = localProfile
+      ? `Локальный профиль «${localProfile.name}» сохранён, ` +
+        'но запуск с одним локальным профилем не реализован.'
+      : 'Сначала создай локальный профиль или войди через Microsoft.';
+
+    sendStatus(message);
+
     return {
       ok: false,
-      message: localProfile
-        ? `Профиль «${localProfile.name}» сохранён, но запуск с локальным профилем ещё не реализован.`
-        : 'Сначала создай локальный профиль или войди через Microsoft.'
+      message
     };
   }
 
   isLaunching = true;
+  sendStatus(`Подготавливаем Minecraft ${version}…`);
 
   try {
-    sendStatus(`Подготавливаем Minecraft ${version}…`);
-
     const launcher = new Launcher({
       root: GAME_ROOT,
       account,
@@ -250,9 +315,14 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
     launcher.on('launch_download', (data) => {
       const total = data?.total;
 
-      sendStatus(total
-        ? `Загрузка файлов: ${total.downloaded ?? 0} из ${total.amount ?? '?'}`
-        : 'Скачиваем файлы Minecraft…');
+      if (total) {
+        sendStatus(
+          `Загрузка файлов: ${total.downloaded ?? 0} ` +
+          `из ${total.amount ?? '?'}`
+        );
+      } else {
+        sendStatus('Скачиваем файлы Minecraft…');
+      }
     });
 
     launcher.on('launch_check_java', () => {
@@ -260,11 +330,15 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
     });
 
     launcher.on('launch_install_loader', (loader) => {
-      sendStatus(`Устанавливаем загрузчик ${loader?.type || 'мод'}…`);
+      sendStatus(
+        `Устанавливаем загрузчик ${loader?.type || 'мод'}…`
+      );
     });
 
     launcher.on('launch_launch', (info) => {
-      sendStatus(`Запускаем Minecraft ${info?.version || version}…`);
+      sendStatus(
+        `Запускаем Minecraft ${info?.version || version}…`
+      );
     });
 
     launcher.on('launch_close', (code) => {
@@ -279,18 +353,28 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
 
     await launcher.launch();
 
-    sendStatus(`Команда запуска Minecraft ${version} выполнена.`);
+    const message =
+      `Команда запуска Minecraft ${version} передана лаунчеру. ` +
+      'Это ещё не подтверждает, что игровое окно открылось.';
+
+    sendStatus(message);
 
     return {
       ok: true,
-      message: `Команда запуска Minecraft ${version} выполнена.`
+      message
     };
   } catch (error) {
-    const message = errorMessage(error, 'Не удалось запустить Minecraft.');
+    const message = errorMessage(
+      error,
+      'Не удалось запустить Minecraft.'
+    );
 
     sendStatus(`Ошибка запуска: ${message}`);
 
-    return { ok: false, message };
+    return {
+      ok: false,
+      message
+    };
   } finally {
     isLaunching = false;
   }
@@ -305,6 +389,9 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
+}).catch((error) => {
+  console.error('Не удалось запустить MLaunch:', error);
+  app.quit();
 });
 
 app.on('window-all-closed', () => {
