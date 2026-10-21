@@ -53,7 +53,7 @@ label{color:#cbd6e9;font-size:13px}
 .item p{margin:5px 0}
 .skin-preview{width:128px;height:128px;object-fit:contain;image-rendering:pixelated;background:#0a1220;border:1px solid var(--line);border-radius:12px;padding:8px}
 #skinImage[hidden]{display:none}
-progress{width:100%;height:8px;accent-color:var(--green)}
+progress{width:100%;height:8px;accent-color:var(--green);margin-top:12px}
 footer{margin-top:25px;color:var(--muted);font-size:11px}
 @media(max-width:760px){
 .layout{grid-template-columns:1fr}
@@ -74,6 +74,7 @@ header{padding:14px}
   <input id="search" class="search" placeholder="Поиск версий Minecraft">
   <button id="account">Войти Microsoft</button>
 </header>
+
 <div class="layout">
 <aside>
   <button class="nav active" data-page="home">⌂ Главная</button>
@@ -85,6 +86,7 @@ header{padding:14px}
   <button class="nav" data-page="settings">⚙ Настройки</button>
   <div class="sidefoot">MLaunch<br><span id="appVersion">Загрузка версии…</span><br><span id="platform">Проверка системы…</span></div>
 </aside>
+
 <main>
 <section class="page active" id="home">
   <div class="hero">
@@ -106,12 +108,13 @@ header{padding:14px}
     <div class="panel">
       <h3>Профиль игрока</h3>
       <div class="big-number" id="playerLabel">Игрок</div>
-      <p>Локальное имя используется в интерфейсе. Оно не заменяет авторизацию игрового аккаунта.</p>
+      <p>Локальное имя сохраняется в профиле. Само по себе оно не подтверждает авторизацию игрового аккаунта.</p>
       <button data-goto="profile">Настроить профиль</button>
     </div>
   </div>
   <div class="panel">
-    <h3>Ход запуска</h3>
+    <h3>Диагностика запуска</h3>
+    <p>Здесь отображаются этапы подготовки и ошибки, о которых сообщает лаунчер. Передача команды ещё не означает, что игровое окно открылось.</p>
     <div class="status" id="launchStatus">Лаунчер готов к работе.</div>
     <progress id="progress" max="100" value="0"></progress>
   </div>
@@ -128,7 +131,7 @@ header{padding:14px}
   </div>
   <div class="panel">
     <h2>Предпросмотр скина</h2>
-    <p>Выбери PNG размером 64×64 или 64×32 пикселя. Сейчас это только предпросмотр, а не установка скина в игру.</p>
+    <p>Выбери PNG размером 64×64 или 64×32 пикселя. Это только предпросмотр, не установка скина в игру.</p>
     <div class="row">
       <img id="skinImage" class="skin-preview" alt="Предпросмотр скина" hidden>
       <div class="grow">
@@ -149,7 +152,7 @@ header{padding:14px}
   <div class="panel">
     <div class="eyebrow">Игровые версии</div>
     <h1>Версии Minecraft</h1>
-    <p>Список загружается из официального манифеста Mojang при наличии интернета.</p>
+    <p>Список загружается из официального манифеста Mojang при наличии интернета. При первом выборе приоритет — 1.20.1.</p>
     <div class="field"><label for="versionSearch">Фильтр версий</label><input id="versionSearch" placeholder="Например, 1.20.1"></div>
     <div class="field"><label for="versionSelectAlt">Выбранная версия</label><select id="versionSelectAlt"><option value="">Загрузка списка…</option></select></div>
     <div class="row"><button class="primary" id="chooseVersion">Выбрать версию</button><button id="refreshVersions">Обновить список</button></div>
@@ -163,7 +166,7 @@ header{padding:14px}
     <div class="eyebrow">Модификации</div>
     <h1>Моды</h1>
     <p>Управление модами и загрузчиками будет подключено в следующих этапах разработки.</p>
-    <div class="item"><strong>Fabric / Forge / NeoForge / Quilt</strong><p>Автоматическая установка пока не подключена. Этот раздел пока информационный.</p></div>
+    <div class="item"><strong>Fabric / Forge / NeoForge / Quilt</strong><p>Автоматическая установка пока не подключена. Этот раздел информационный.</p></div>
     <div class="status">Следующий этап: установка загрузчика, каталог модов и управление файлами.</div>
   </div>
 </section>
@@ -267,7 +270,7 @@ async function loadProfile() {
     try {
       const result = await window.mlaunch.setLocalProfile(profile.name);
       if (result && result.ok) {
-        setStatus('profileStatus', result.message, 'good');
+        setStatus('profileStatus', result.message, '');
       }
     } catch (error) {
       console.error('Не удалось активировать локальный профиль:', error);
@@ -291,7 +294,7 @@ $('saveProfile').addEventListener('click', async () => {
   }
 
   if (!writeLocal(PROFILE_KEY, JSON.stringify({name}))) {
-    setStatus('profileStatus', 'Не удалось сохранить профиль.', 'error');
+    setStatus('profileStatus', 'Не удалось сохранить профиль в хранилище интерфейса.', 'error');
     return;
   }
 
@@ -304,20 +307,20 @@ $('saveProfile').addEventListener('click', async () => {
 
       if (!result || !result.ok) {
         setStatus('profileStatus',
-          result?.message || 'Не удалось активировать локальный профиль.',
+          result?.message || 'Не удалось сохранить профиль в приложении.',
           'error');
         return;
       }
 
-      setStatus('profileStatus', result.message, 'good');
+      setStatus('profileStatus', result.message, '');
     } catch (error) {
       setStatus('profileStatus',
-        'Профиль сохранён, но связь с лаунчером не удалась.',
-        'error');
+        'Профиль сохранён в интерфейсе, но связь с приложением не удалась: ' +
+        (error.message || error), 'error');
     }
   } else {
     setStatus('profileStatus',
-      'Профиль сохранён локально. Проверь обновление preload.js.',
+      'Профиль сохранён в интерфейсе, но основная часть приложения недоступна. Проверь preload.js.',
       'error');
   }
 
@@ -353,7 +356,7 @@ $('skinFile').addEventListener('change', () => {
 
       $('skinImage').src = reader.result;
       $('skinImage').hidden = false;
-      setStatus('skinStatus', 'Предпросмотр сохранён. Скин в самой игре не изменён.', 'good');
+      setStatus('skinStatus', 'Предпросмотр сохранён. Скин в самой игре не изменён.');
     };
 
     img.onerror = () => setStatus('skinStatus', 'Не удалось прочитать изображение.', 'error');
@@ -457,14 +460,27 @@ async function loadVersions() {
 
     if (!versions.length) throw new Error('Список пуст');
 
-    const preferred = versions.find(v => v.type === 'release');
-    if (!selectedVersion) selectedVersion = preferred ? preferred.id : versions[0].id;
+    const currentSelectionExists = versions.some(v => v.id === selectedVersion);
+
+    if (!currentSelectionExists) {
+      const priorityVersion = versions.find(v => v.id === '1.20.1');
+      const latestRelease = versions.find(v => v.type === 'release');
+      selectedVersion = (priorityVersion || latestRelease || versions[0]).id;
+    }
 
     fillSelect($('versionSelect'), versions);
     setSelectedVersion(selectedVersion);
     renderVersions();
 
-    setStatus('versionsStatus', 'Загружено версий: ' + versions.length + '.', 'good');
+    const preferredFound = versions.some(v => v.id === '1.20.1');
+    setStatus(
+      'versionsStatus',
+      'Загружено версий: ' + versions.length + '. ' +
+      (preferredFound
+        ? 'Приоритетная версия 1.20.1 доступна в списке.'
+        : 'Версия 1.20.1 не найдена в полученном списке.'),
+      ''
+    );
   } catch (error) {
     versions = [];
     $('versionSelect').replaceChildren(new Option('Не удалось загрузить список', ''));
@@ -506,7 +522,7 @@ async function refreshAppStatus() {
 
     setStatus('gameStatus',
       status.message || (status.authenticated ? 'Аккаунт авторизован.' : 'Локальный профиль или вход Microsoft.'),
-      status.authenticated || status.localProfile ? 'good' : '');
+      status.authenticated ? 'good' : '');
 
     if (status.launching) setStatus('launchStatus', 'Minecraft запускается…');
   } catch (error) {
@@ -565,18 +581,27 @@ async function launchGame() {
   launchBusy = true;
   $('play').disabled = true;
   $('progress').removeAttribute('value');
-  setStatus('launchStatus', 'Передаём запрос на запуск версии ' + selectedVersion + '…');
+  setStatus('launchStatus', 'Передаём запрос на запуск Minecraft ' + selectedVersion + '…');
 
   try {
     const result = await window.mlaunch.launchGame(selectedVersion);
     const success = Boolean(result && (result.ok === true || result.success === true));
+    const message = result && result.message
+      ? result.message
+      : 'Запрос на запуск обработан.';
 
-    setStatus('launchStatus',
-      result && result.message ? result.message : 'Запрос на запуск обработан.',
-      success ? 'good' : 'error');
+    if (success) {
+      setStatus(
+        'launchStatus',
+        message + '\nКоманда передана лаунчеру. Открытие игрового окна пока не подтверждено.',
+        ''
+      );
+    } else {
+      setStatus('launchStatus', message, 'error');
+    }
   } catch (error) {
     setStatus('launchStatus',
-      'Не удалось запустить игру: ' + (error.message || error), 'error');
+      'Не удалось передать запрос запуска: ' + (error.message || error), 'error');
   } finally {
     launchBusy = false;
     $('play').disabled = false;
