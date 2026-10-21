@@ -1,4 +1,3 @@
-
 'use strict';
 
 const { app, BrowserWindow, ipcMain } = require('electron');
@@ -21,7 +20,11 @@ function profilePath() {
 }
 
 function errorMessage(error, fallback) {
-  if (error && typeof error.message === 'string' && error.message.trim()) {
+  if (
+    error &&
+    typeof error.message === 'string' &&
+    error.message.trim()
+  ) {
     return error.message.trim().slice(0, 500);
   }
 
@@ -31,12 +34,18 @@ function errorMessage(error, fallback) {
 function sendStatus(message) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
 
-  mainWindow.webContents.send('mlaunch:progress', String(message));
+  mainWindow.webContents.send(
+    'mlaunch:progress',
+    String(message)
+  );
 }
 
 function loadLocalProfile() {
   try {
-    const saved = JSON.parse(fs.readFileSync(profilePath(), 'utf8'));
+    const saved = JSON.parse(
+      fs.readFileSync(profilePath(), 'utf8')
+    );
+
     const name = String(saved?.name || '').trim();
 
     localProfile = /^[A-Za-z0-9_]{3,16}$/.test(name)
@@ -50,7 +59,10 @@ function loadLocalProfile() {
 function saveLocalProfile(name) {
   const file = profilePath();
 
-  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.mkdirSync(path.dirname(file), {
+    recursive: true
+  });
+
   fs.writeFileSync(
     file,
     JSON.stringify({ name }, null, 2),
@@ -59,22 +71,20 @@ function saveLocalProfile(name) {
 }
 
 function getStatus() {
-  const authenticated = Boolean(account);
-
   let message;
 
   if (isLaunching) {
     message = 'Minecraft запускается…';
   } else if (authInProgress) {
-    message = 'Выполняется авторизация Microsoft…';
-  } else if (authenticated) {
-    message = `Вход Microsoft выполнен: ${
+    message = 'Выполняется вход Microsoft…';
+  } else if (account) {
+    message = `Вход выполнен: ${
       account.name || account.username || 'Игрок'
     }`;
   } else if (localProfile) {
     message =
       `Локальный профиль «${localProfile.name}» сохранён. ` +
-      'Для запуска требуется поддерживаемая авторизация.';
+      'Для запуска нужна поддерживаемая авторизация.';
   } else {
     message = 'Создай локальный профиль или войди через Microsoft.';
   }
@@ -83,8 +93,8 @@ function getStatus() {
     installed: null,
     launching: isLaunching,
     authenticating: authInProgress,
-    authenticated,
-    canLaunch: authenticated && !isLaunching && !authInProgress,
+    authenticated: Boolean(account),
+    canLaunch: Boolean(account) && !isLaunching && !authInProgress,
     localProfile: localProfile ? { ...localProfile } : null,
     message
   };
@@ -138,12 +148,13 @@ ipcMain.handle('mlaunch:set-local-profile', (_event, rawName) => {
     saveLocalProfile(name);
     localProfile = { name };
 
-    sendStatus(`Локальный профиль «${name}» сохранён.`);
+    const message = `Локальный профиль «${name}» сохранён.`;
+    sendStatus(message);
 
     return {
       ok: true,
       name,
-      message: `Локальный профиль «${name}» сохранён.`
+      message
     };
   } catch (error) {
     return {
@@ -205,17 +216,10 @@ ipcMain.handle('mlaunch:login', async () => {
     };
   }
 
-  if (authInProgress) {
+  if (authInProgress || isLaunching) {
     return {
       ok: false,
-      message: 'Авторизация уже выполняется.'
-    };
-  }
-
-  if (isLaunching) {
-    return {
-      ok: false,
-      message: 'Дождись завершения запуска Minecraft.'
+      message: 'Дождись завершения текущей операции.'
     };
   }
 
@@ -233,7 +237,6 @@ ipcMain.handle('mlaunch:login', async () => {
     account = result;
 
     const name = account.name || account.username || 'Игрок';
-
     sendStatus(`Вход Microsoft выполнен: ${name}`);
 
     return {
@@ -261,17 +264,10 @@ ipcMain.handle('mlaunch:login', async () => {
 });
 
 ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
-  if (isLaunching) {
+  if (isLaunching || authInProgress) {
     return {
       ok: false,
-      message: 'Minecraft уже запускается.'
-    };
-  }
-
-  if (authInProgress) {
-    return {
-      ok: false,
-      message: 'Сначала дождись завершения авторизации.'
+      message: 'Дождись завершения текущей операции.'
     };
   }
 
@@ -286,8 +282,8 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
 
   if (!account) {
     const message = localProfile
-      ? `Локальный профиль «${localProfile.name}» сохранён, ` +
-        'но запуск с одним локальным профилем не реализован.'
+      ? `Профиль «${localProfile.name}» сохранён, ` +
+        'но игровой запуск с одним ником пока не подключён.'
       : 'Сначала создай локальный профиль или войди через Microsoft.';
 
     sendStatus(message);
@@ -355,7 +351,7 @@ ipcMain.handle('mlaunch:launch', async (_event, options = {}) => {
 
     const message =
       `Команда запуска Minecraft ${version} передана лаунчеру. ` +
-      'Это ещё не подтверждает, что игровое окно открылось.';
+      'Открытие игрового окна ещё нужно подтвердить тестом.';
 
     sendStatus(message);
 
